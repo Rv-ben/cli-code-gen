@@ -1,14 +1,12 @@
 package main
 
 import (
-	"ai-code-editor/codeEditor"
-	"ai-code-editor/config"
-	"ai-code-editor/ollama"
+	// "ai-code-editor/config"
+	// "ai-code-editor/ollama"
 	"ai-code-editor/services"
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 
 	"github.com/joho/godotenv"
 )
@@ -20,8 +18,8 @@ func main() {
 		log.Printf("Warning: Error loading .env file: %v", err)
 	}
 
-	config := config.Load()
-	ollamaClient := ollama.NewClient(config.OllamaBaseURL)
+	// config := config.Load()
+	// ollamaClient := ollama.NewClient(config.OllamaBaseURL)
 
 	basePromptProvider := services.NewBasePromptProvider()
 
@@ -41,32 +39,8 @@ func main() {
 
 	model := os.Args[1]
 	userPrompt := os.Args[2]
-	files := os.Args[3:] // Get all remaining arguments as files
 
 	fmt.Printf("Using model: %s\n", model)
-
-	var fileContents string = ""
-	if len(files) > 0 {
-		// Files will be relative to the current directory
-		// We need to get the full path of the files
-		for i, file := range files {
-			fullPath, err := filepath.Abs(file)
-			if err != nil {
-				log.Printf("Error getting full path for file %s: %v", file, err)
-				continue
-			}
-			files[i] = fullPath
-		}
-
-		fileContextProvider := services.NewFileContextProvider(files)
-		fileContents = fileContextProvider.GetFileContents()
-	}
-
-	// Add file contents to prompt if any files were read
-	var prompt = userPrompt
-	if fileContents != "" {
-		prompt = prompt + "\n" + fileContents
-	}
 
 	// Generate directory tree
 	treeService := services.NewDirectoryTree(
@@ -79,19 +53,17 @@ func main() {
 		},
 	)
 
-	treeText, err := treeService.GenerateTree(currentDir)
-	if err != nil {
-		log.Printf("Error generating directory tree: %v", err)
-	}
+	defer treeService.Close() // Make sure to clean up resources
+	// Get the tree as a string
+	treeText := treeService.GetDirectoryString(currentDir)
 
 	log.Printf("Working directory: %s", currentDir)
 
-	prompt = prompt + "\n\n" + treeText
+	prompt := userPrompt + "\n\n" + treeText
 
 	userPrompt = "\n\n USER TASK: " + userPrompt + "\n\n"
 
 	completePrompt := basePromptProvider.GetPrompt() + "\n\n" + "THE CURRENT WORKING DIRECTORY IS: " + currentDir + "\n\n" + prompt + userPrompt
 
-	codeEditor := codeEditor.NewCodeEditor()
-	codeEditor.EditCodeBase(ollamaClient, model, completePrompt)
+	println(completePrompt)
 }

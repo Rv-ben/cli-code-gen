@@ -21,7 +21,7 @@ func (c *CodeEditor) EditCodeBase(client *ollama.Client, model string, initalPro
 	// Create a parser to parse the response
 	parser := NewAiResponseParser()
 
-	var initialReply string = c.SendMessage(client, model, initalPrompt)
+	var initialReply string = c.SendMessage(client, model, true, initalPrompt)
 
 	log.Printf("Initial reply:\n %v", initialReply)
 
@@ -34,19 +34,35 @@ func (c *CodeEditor) EditCodeBase(client *ollama.Client, model string, initalPro
 	}
 
 	// Execute the actions
+	// For 3 times
+	var fileContents string = ""
+	var reply string = ""
 
-	var prompt string = ""
-	for _, action := range actions {
-		fileContents := c.ExecuteAction(action)
-		if fileContents != "" {
-			prompt += fileContents
+	for i := 0; i < 3; i++ {
+		if len(actions) == 0 {
+			log.Printf("No actions found in response")
+			break
 		}
+
+		for _, action := range actions {
+			fileContents += "\n\n" + c.ExecuteAction(action)
+		}
+
+		log.Printf("File contents: %s", fileContents)
+
+		reply = c.SendMessage(client, model, true, fileContents+"\n\nDo you need more context to solve the USER TASK? If you need more files, provide more files to open, if not don't write anything")
+		actions = parser.ParseResponse(reply)
+
+		log.Printf("Intermediate reply: %s", reply)
 	}
 
-	c.SendMessage(client, model, prompt)
+	var learnedReply string = c.SendMessage(client, model, false, "Tell me what you learned from the files, you don't need to write in json format")
+
+	log.Printf("Learned reply: %s", learnedReply)
 }
 
-func (c *CodeEditor) SendMessage(client *ollama.Client, model string, prompt string) string {
+func (c *CodeEditor) SendMessage(client *ollama.Client, model string, isJson bool, prompt string) string {
+
 	req := ollama.ChatRequest{
 		Model: model,
 		Messages: []ollama.Message{
@@ -55,6 +71,10 @@ func (c *CodeEditor) SendMessage(client *ollama.Client, model string, prompt str
 				Content: prompt,
 			},
 		},
+	}
+
+	if isJson {
+		req.WithFormat("json")
 	}
 
 	resp, err := client.ChatCompletion(req)
@@ -80,7 +100,7 @@ func (c *CodeEditor) ExecuteAction(action codeEditor.BaseAction) string {
 			log.Printf("Error: Failed to convert action to RequestFileAction")
 			return ""
 		}
-		fileContextProvider := services.NewFileContextProvider([]string{fileAction.Path})
+		fileContextProvider := services.NewFileContextProvider(fileAction.Path)
 
 		log.Printf("File context provider created with path: %s", fileAction.Path)
 
@@ -91,8 +111,6 @@ func (c *CodeEditor) ExecuteAction(action codeEditor.BaseAction) string {
 		}
 
 		fileContents := fileContextProvider.GetFileContents(wd)
-
-		log.Printf("File contents: %s", fileContents)
 
 		return fileContents
 	}

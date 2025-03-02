@@ -39,7 +39,7 @@ func main() {
 	}
 
 	model := os.Args[1]
-	prompt := os.Args[2]
+	userPrompt := os.Args[2]
 	files := os.Args[3:] // Get all remaining arguments as files
 
 	fmt.Printf("Using model: %s\n", model)
@@ -48,6 +48,7 @@ func main() {
 	fileContents := fileContextProvider.GetFileContents(currentDir)
 
 	// Add file contents to prompt if any files were read
+	var prompt = userPrompt
 	if fileContents != "" {
 		prompt = prompt + "\n" + fileContents
 	}
@@ -71,7 +72,10 @@ func main() {
 	log.Printf("Working directory: %s", currentDir)
 
 	prompt = prompt + "\n\n" + treeText
-	completePrompt := basePromptProvider.GetPrompt() + "\n" + "THE CURRENT WORKING DIRECTORY IS: " + currentDir + "\n" + prompt
+
+	userPrompt = "\n\n USER TASK: " + userPrompt + "\n\n"
+
+	completePrompt := basePromptProvider.GetPrompt() + "\n\n" + "THE CURRENT WORKING DIRECTORY IS: " + currentDir + "\n\n" + prompt + userPrompt
 
 	codeEditor := codeEditor.NewCodeEditor()
 	codeEditor.EditCodeBase(ollamaClient, model, completePrompt)

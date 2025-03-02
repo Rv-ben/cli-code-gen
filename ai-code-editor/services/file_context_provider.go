@@ -11,27 +11,46 @@ type FileContextProvider struct {
 	files []string
 }
 
-func NewFileContextProvider(files []string) *FileContextProvider {
-	return &FileContextProvider{files: files}
+func NewFileContextProvider(files interface{}) *FileContextProvider {
+	switch f := files.(type) {
+	case []string:
+		return &FileContextProvider{files: f}
+	case string:
+		return &FileContextProvider{files: []string{f}}
+	default:
+		return &FileContextProvider{files: []string{}}
+	}
+}
+
+func (f *FileContextProvider) GetFileContent(path string) (string, error) {
+	// Clean the path to remove any duplicate separators
+	cleanPath := filepath.Clean(path)
+
+	content, err := os.ReadFile(cleanPath)
+	if err != nil {
+		log.Printf("Error reading file %s: %v", cleanPath, err)
+		return "", fmt.Errorf("error reading file %s: %w", cleanPath, err)
+	}
+
+	return string(content), nil
 }
 
 func (f *FileContextProvider) GetFileContents(currentDir string) string {
+	log.Printf("Getting contents for files: %v", f.files)
 	fileContents := ""
+
 	for _, file := range f.files {
-		// Convert file path to be relative to current directory
-		relPath, err := filepath.Rel(currentDir, filepath.Join(currentDir, file))
+		// Clean the path to remove any duplicate separators
+		cleanPath := filepath.Clean(file)
+
+		content, err := os.ReadFile(cleanPath)
 		if err != nil {
-			log.Printf("Error getting relative path for %s: %v", file, err)
+			log.Printf("Error reading file %s: %v", cleanPath, err)
 			continue
 		}
 
-		content, err := os.ReadFile(relPath)
-		if err != nil {
-			log.Printf("Error reading file %s: %v", relPath, err)
-			continue
-		}
-		fileContents += fmt.Sprintf("\n<open_file>\n%s\n```%s\n<contents>\n%s\n</contents>\n```\n</open_file>\n",
-			relPath, relPath, content)
+		fileContents += fmt.Sprintf("\n<File Context>\n%s\n```%s\n%s\n```\n</File Context>\n",
+			cleanPath, cleanPath, string(content))
 	}
 
 	return fileContents

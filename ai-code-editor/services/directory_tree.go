@@ -1,6 +1,7 @@
 package services
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -29,6 +30,22 @@ type FileNode struct {
 	Children []FileNode `json:"children,omitempty"`
 }
 
+// Add these struct definitions after the existing FileNode struct
+
+type DirectoryStructure struct {
+	Directory Directory `json:"directory"`
+}
+
+type Directory struct {
+	Path  string     `json:"path"`
+	Files []FileInfo `json:"files"`
+}
+
+type FileInfo struct {
+	Path               string   `json:"path"`
+	FunctionSignatures []string `json:"functionSignatures"`
+}
+
 // NewDirectoryTree creates a new DirectoryTree service with default settings
 func NewDirectoryTree(indent string, maxDepth int, skipPaths []string) *DirectoryTree {
 	if indent == "" {
@@ -49,21 +66,26 @@ func NewDirectoryTree(indent string, maxDepth int, skipPaths []string) *Director
 }
 
 // GenerateTree generates a tree-sitter tree representation of the directory structure
-func (dt *DirectoryTree) GenerateTree(rootPath string) (string, error) {
+func (dt *DirectoryTree) GenerateTree(rootPath string) (*DirectoryStructure, error) {
 	if dt.tree != nil {
 		dt.tree.Close()
 	}
 
 	dt.parser.SetLanguage(tree_sitter.NewLanguage(tree_sitter_go.Language()))
 
-	contents, err := dt.buildDirectoryText(rootPath, 0)
-	if err != nil {
-		return "", fmt.Errorf("error generating directory tree: %w", err)
+	structure := &DirectoryStructure{
+		Directory: Directory{
+			Path:  rootPath,
+			Files: make([]FileInfo, 0),
+		},
 	}
 
-	dt.directoryString = contents
+	err := dt.buildDirectoryStructure(rootPath, structure)
+	if err != nil {
+		return nil, fmt.Errorf("error generating directory tree: %w", err)
+	}
 
-	return contents, nil
+	return structure, nil
 }
 
 // Close releases resources associated with the DirectoryTree
@@ -127,9 +149,19 @@ func (dt *DirectoryTree) buildDirectoryText(path string, depth int) (string, err
 }
 
 func (dt *DirectoryTree) GetDirectoryString(rootPath string) string {
-	dt.GenerateTree(rootPath)
+	structure, err := dt.GenerateTree(rootPath)
+	if err != nil {
+		log.Printf("Error generating tree: %v", err)
+		return ""
+	}
 
-	return dt.directoryString
+	jsonBytes, err := json.MarshalIndent(structure, "", "    ")
+	if err != nil {
+		log.Printf("Error marshaling to JSON: %v", err)
+		return ""
+	}
+
+	return string(jsonBytes)
 }
 
 func (dt *DirectoryTree) GetTree(filePath string) string {
@@ -217,4 +249,73 @@ func (dt *DirectoryTree) GetFunctionDeclarations(node *tree_sitter.Node, fileCon
 	}
 
 	return declarations.String()
+}
+
+// Add new method to build the directory structure
+func (dt *DirectoryTree) buildDirectoryStructure(path string, structure *DirectoryStructure) error {
+
+	info, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+
+	if strings.HasPrefix(info.Name(), ".") {
+		return nil
+	}
+
+	for _, skipPath := range dt.skipPaths {
+		if strings.Contains(path, skipPath) {
+			return nil
+		}
+	}
+
+	if info.IsDir() {
+		entries, err := os.ReadDir(path)
+		if err != nil {
+			return err
+		}
+
+		for _, entry := range entries {
+			childPath := filepath.Join(path, entry.Name())
+			err := dt.buildDirectoryStructure(childPath, structure)
+			if err != nil {
+				return err
+			}
+		}
+	} else {
+		if strings.HasSuffix(path, ".go") {
+			signatures := dt.GetFunctionSignatures(path)
+			fileInfo := FileInfo{
+				Path:               path,
+				FunctionSignatures: signatures,
+			}
+			structure.Directory.Files = append(structure.Directory.Files, fileInfo)
+		}
+	}
+
+	return nil
+}
+
+// Add new method to get function signatures
+func (dt *DirectoryTree) GetFunctionSignatures(filePath string) []string {
+	fileContents, err := os.ReadFile(filePath)
+	if err != nil {
+		log.Printf("Error reading file %s: %v", filePath, err)
+		return nil
+	}
+
+	tree := dt.parser.Parse(nil, nil)
+	if tree == nil {
+		log.Printf("Failed to create parse tree for %s", filePath)
+		return nil
+	}
+
+	tree = dt.parser.Parse(fileContents, nil)
+	if tree == nil {
+		log.Printf("Failed to parse file %s", filePath)
+		return nil
+	}
+
+	declarations := dt.GetFunctionDeclarations(tree.RootNode(), fileContents)
+	return strings.Split(strings.TrimSpace(declarations), "\n")
 }

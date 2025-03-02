@@ -27,7 +27,26 @@ func (c *CodeEditor) LearnFromFiles(client *ollama.Client, model string, initial
 	// Create a parser to parse the response
 	parser := NewAiResponseParser()
 
-	var initialReply string = c.SendMessage(client, model, true, initialPrompt)
+	var expectedFormat string = `
+		{
+			"type": "object",
+			"properties": {
+				"actions": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"type": "open_file",
+							"path": "path/to/file",
+						},
+						"required": ["type", "path"]
+					}
+				}
+			}
+		}
+	`
+
+	var initialReply string = c.SendMessage(client, model, expectedFormat, initialPrompt)
 
 	log.Printf("Initial reply:\n %v", initialReply)
 
@@ -54,7 +73,7 @@ func (c *CodeEditor) LearnFromFiles(client *ollama.Client, model string, initial
 			fileContents += "\n\n" + c.ExecuteAction(action)
 		}
 
-		reply = c.SendMessage(client, model, true, fileContents+"\n\nDo you need more context to solve the USER TASK? If you need more files, provide more files to open, if not don't write anything")
+		reply = c.SendMessage(client, model, "json", fileContents+"\n\nDo you need more context to solve the USER TASK? If you need more files, provide more files to open, if not don't write anything")
 		actions = parser.ParseResponse(reply)
 
 		log.Printf("Intermediate reply: %s", reply)
@@ -69,23 +88,33 @@ func (c *CodeEditor) EditCode(client *ollama.Client, model string) {
 	var prompt string = `
 		Edit the code to solve the USER TASK. Use the json structure to write the code.
 		You should respond with an array of actions, where each action has a "type" field that is "write_file" only.
+		Respond using JSON.
+	`
 
-		Your response should be in the following format and nothing else (EXAMPLE):
+	var expectedFormat string = `
 		{
-			"actions": [
-				{
-					"type": "write_file",
-					"path": "path/to/file",
-					"content": "file contents here",
-					"start_line": x, // Required
-					"end_line": y, // Required
-					"action": "replace" // or "insert" // Required
+			"type": "object",
+			"properties": {
+				"actions": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"type": "write_file",
+							"path": "path/to/file",
+							"content": "file contents here",
+							"start_line": x,
+							"end_line": y,
+							"action": "replace"
+						},
+						"required": ["type", "path", "content", "start_line", "end_line", "action"]
+					}
 				}
-			]
+			}
 		}
 	`
 
-	var reply string = c.SendMessage(client, model, true, prompt)
+	var reply string = c.SendMessage(client, model, expectedFormat, prompt)
 
 	log.Printf("Edit Reply: %s", reply)
 
@@ -114,7 +143,7 @@ func (c *CodeEditor) EditCode(client *ollama.Client, model string) {
 	}
 }
 
-func (c *CodeEditor) SendMessage(client *ollama.Client, model string, isJson bool, prompt string) string {
+func (c *CodeEditor) SendMessage(client *ollama.Client, model string, jsonFormat string, prompt string) string {
 
 	req := ollama.ChatRequest{
 		Model: model,
@@ -126,8 +155,8 @@ func (c *CodeEditor) SendMessage(client *ollama.Client, model string, isJson boo
 		},
 	}
 
-	if isJson {
-		req.WithFormat("json")
+	if jsonFormat != "" {
+		req.WithFormat(jsonFormat)
 	}
 
 	resp, err := client.ChatCompletion(req)

@@ -4,22 +4,12 @@ const (
 	BasePrompt = `
 
 		You are a code editor. You will be given a directory structure. Your task is to help me code by providing actions in JSON format. You need to gather information from relevant files to help me code.
-		You should respond with an array of actions, where each action has a "type" field that is either "open_file" or "write_file". You should only respond with one action at a time. 
+		You should respond with an array of actions, where each action has a "type" field. You should only respond with one action at a time. 
 
 		This is how you can open a file:
 		{
 			"type": "open_file",
 			"path": "path/to/file"  // Full path
-		}
-
-		This is how you can write to a file:
-		{
-			"type": "write_file",
-			"path": "path/to/file",
-			"content": "file contents here",
-			"action": "replace" // or "insert"
-			"start_line": 1,
-			"end_line": 10
 		}
 
 		Example response:

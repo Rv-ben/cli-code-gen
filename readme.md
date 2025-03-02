@@ -1,49 +1,44 @@
-**ai-code-editor**
-================
+# ai-code-editor
 
-AI-Powered Code Editor for the Command Line
+A command-line tool that uses AI to help make code changes to your project.
 
-**Overview**
+## Overview
 
-ai-code-editor is a command-line code editor that leverages artificial intelligence to assist developers in writing, debugging, and maintaining their code. With a focus on ease of use and productivity, this tool aims to simplify the coding process by providing real-time suggestions, auto-completion, and intelligent error detection.
+ai-code-editor is a CLI tool that uses Ollama's AI models to help modify your codebase. You provide a prompt describing what changes you want to make, optionally specify which files to focus on, and the AI will suggest specific code modifications.
 
-**Features**
+## Getting Started
 
-* Real-time syntax highlighting and code completion
-* AI-powered code suggestions for improved readability and maintainability
-* Auto-import statement generation for popular libraries and frameworks
-* Intelligent error detection and suggestion of potential fixes
+1. Install [Ollama](https://ollama.ai/) on your system
+2. Clone this repository
+3. Create a `.env` file with your configuration
+4. Run the tool:
+   ```
+   go run main.go <model> "your prompt" [files...]
+   ```
 
-**Components**
+## Components
 
-The ai-code-editor project consists of the following components:
+* **main.go**: Entry point that processes CLI arguments and coordinates the editing flow
+* **codeEditor/**: Core editing logic
+  - `code-editor.go`: Handles the code modification process
+  - `ai-response-parser.go`: Processes AI suggestions into file changes
+  - `actions/`: File modification actions
+* **services/**: Supporting functionality
+  - `directory_tree.go`: Provides project structure context to the AI
+  - `file_context_provider.go`: Reads and provides file contents
+  - `base_prompt_provider.go`: Constructs AI prompts
+* **ollama/**: AI integration
+  - `client.go`: Handles communication with Ollama models
+* **config/**: Configuration handling
+  - `config.go`: Loads and manages configuration settings
 
-* **ai-code-editor**: The main executable that handles user input, parses code, and generates output.
-* **config**: A package containing configuration files and settings for the editor (e.g., theme, language, etc.).
-        + `config.go`: Defines the configuration structure and provides methods for reading and writing config data.
-* **go.mod**: The Go module file that lists the project's dependencies.
-* **main.go**: The entry point of the program that initializes the editor and handles user input.
-* **ollama**:
-        + `client.go`: Handles communication with the AI engine (not included in this repository) to retrieve code suggestions and insights.
 
-**Services**
+## Requirements
 
-The ai-code-editor project also includes a services package containing reusable functions for directory tree manipulation:
+* Go 1.20 or higher
+* Ollama installed and running locally
+* Valid .env configuration
 
-* **directory_tree.go**: Provides methods for traversing and manipulating directory trees.
+## License
 
-**Getting Started**
-
-To use ai-code-editor, simply clone the repository and run the executable (e.g., `go run main.go`). The editor will prompt you to select a programming language and theme. From there, you can start typing code, and the AI-powered features will be available for use.
-
-**Future Development**
-
-We plan to expand ai-code-editor's capabilities by integrating additional AI models, supporting more programming languages, and improving overall performance. Your feedback and contributions are welcome!
-
-**License**
-
-ai-code-editor is licensed under the MIT License (MIT). See `LICENSE` file for details.
-
-**Acknowledgments**
-
-This project was inspired by [List of inspirations], and we're grateful for their innovative work in AI-powered code editors.
+MIT License - See `LICENSE` file for details

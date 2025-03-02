@@ -45,7 +45,7 @@ func (c *CodeEditor) LearnFromFiles(client *ollama.Client, model string, initial
 	var fileContents string = ""
 	var reply string = ""
 
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 0; i++ {
 		if len(actions) == 0 {
 			log.Printf("No actions found in response")
 			break
@@ -71,7 +71,7 @@ func (c *CodeEditor) EditCode(client *ollama.Client, model string) {
 		Edit the code to solve the USER TASK. Use the json structure to write the code.
 		You should respond with an array of actions, where each action has a "type" field that is either "open_file" or "write_file". 
 
-		Your response should be in the following format and nothing else:
+		Your response should be in the following format and nothing else (EXAMPLE):
 		{
 			"actions": [
 				{

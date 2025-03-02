@@ -1,6 +1,7 @@
 package ollama
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -39,11 +40,11 @@ func NewClient(baseURL string) *Client {
 	}
 }
 
-func (c *Client) ChatCompletion(req interface{}) (*http.Response, error) {
+func (c *Client) ChatCompletion(req interface{}) (string, error) {
 	// Convert the generic request to our specific format
 	jsonData, err := json.Marshal(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %w", err)
+		return "", fmt.Errorf("failed to marshal request: %w", err)
 	}
 
 	request, err := http.NewRequest(
@@ -52,20 +53,41 @@ func (c *Client) ChatCompletion(req interface{}) (*http.Response, error) {
 		bytes.NewBuffer(jsonData),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return "", fmt.Errorf("failed to create request: %w", err)
 	}
 
 	request.Header.Set("Content-Type", "application/json")
 
 	response, err := c.httpClient.Do(request)
 	if err != nil {
-		return nil, fmt.Errorf("failed to send request: %w", err)
+		return "", fmt.Errorf("failed to send request: %w", err)
 	}
 
 	if response.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(response.Body)
-		return nil, fmt.Errorf("server returned status code %d: %s", response.StatusCode, string(body))
+		return "", fmt.Errorf("server returned status code %d: %s", response.StatusCode, string(body))
 	}
 
-	return response, nil
+	var responseString string = ""
+
+	scanner := bufio.NewScanner(response.Body)
+	for scanner.Scan() {
+		var response map[string]interface {
+		}
+
+		if err := json.Unmarshal(scanner.Bytes(), &response); err != nil {
+			return "", fmt.Errorf("error parsing response: %w", err)
+		}
+
+		if response["message"] != nil {
+			responseString += response["message"].(map[string]interface{})["content"].(string)
+		}
+	}
+
+	// Check for scanner errors
+	if err := scanner.Err(); err != nil {
+		return "", fmt.Errorf("error reading response: %w", err)
+	}
+
+	return responseString, nil
 }

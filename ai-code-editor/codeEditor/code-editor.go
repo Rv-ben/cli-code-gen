@@ -21,6 +21,7 @@ func (c *CodeEditor) EditCodeBase(client *ollama.Client, model string, initalPro
 	// Reading code
 	c.LearnFromFiles(client, model, initalPrompt)
 
+	c.EditCode(client, model)
 }
 
 func (c *CodeEditor) LearnFromFiles(client *ollama.Client, model string, initialPrompt string) {
@@ -54,8 +55,6 @@ func (c *CodeEditor) LearnFromFiles(client *ollama.Client, model string, initial
 			fileContents += "\n\n" + c.ExecuteAction(action)
 		}
 
-		log.Printf("File contents: %s", fileContents)
-
 		reply = c.SendMessage(client, model, true, fileContents+"\n\nDo you need more context to solve the USER TASK? If you need more files, provide more files to open, if not don't write anything")
 		actions = parser.ParseResponse(reply)
 
@@ -70,16 +69,23 @@ func (c *CodeEditor) EditCode(client *ollama.Client, model string) {
 
 	var prompt string = `
 		Edit the code to solve the USER TASK. Use the json structure to write the code.
+		You should respond with an array of actions, where each action has a "type" field that is either "open_file" or "write_file". 
 
-		For writing files:
+		Your response should be in the following format and nothing else:
 		{
-			"type": "write_file",
-			"path": "path/to/file",
-			"content": "file contents here"
+			"actions": [
+				{
+					"type": "write_file",
+					"path": "path/to/file",
+					"content": "file contents here"
+				}
+			]
 		}
 	`
 
 	var reply string = c.SendMessage(client, model, true, prompt)
+
+	log.Printf("Edit Reply: %s", reply)
 
 	var actions []codeEditor.BaseAction = parser.ParseResponse(reply)
 

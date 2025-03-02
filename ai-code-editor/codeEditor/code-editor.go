@@ -72,6 +72,8 @@ func (c *CodeEditor) EditCode(client *ollama.Client, model string) {
 		You should try your best to not make drastic changes to the code.
 		You should respond with an array of actions, where each action has a "type" field that is either "open_file" or "write_file". 
 
+		IMPORTANT: DO NOT MAKE ANY CHANGES TO THE CODE THAT ARE NOT SPECIFIED IN THE USER TASK.
+		IMPORTANT: DO NOT MAKE DRASTIC CODE CHANGES
 		Your response should be in the following format and nothing else (EXAMPLE):
 		{
 			"actions": [

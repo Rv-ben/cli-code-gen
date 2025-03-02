@@ -8,6 +8,22 @@ const (
 
 		When I send you files they will be in the format of <File Context> and </File Context>, they have the file path and the file contents.
 
+		This is how you can open a file:
+		{
+			"type": "open_file",
+			"path": "path/to/file"  // Full path
+		}
+
+		Example response:
+		{
+			"actions": [
+				{
+					"type": "open_file",
+					"path": "src/main.go"
+				}
+			]
+		}
+
 		Please respond only using this JSON format.
 	`
 )

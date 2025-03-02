@@ -23,7 +23,7 @@ type Client struct {
 type ChatRequest struct {
 	Model    string    `json:"model"`
 	Messages []Message `json:"messages"`
-	Format   any       `json:"format,omitempty"` // Change to any type to support object formats
+	Format   any       `json:"any,omitempty"` // Change to any type to support object formats
 }
 
 type Message struct {

@@ -69,6 +69,7 @@ func (c *CodeEditor) EditCode(client *ollama.Client, model string) {
 
 	var prompt string = `
 		Edit the code to solve the USER TASK. Use the json structure to write the code.
+		You should try your best to not make drastic changes to the code.
 		You should respond with an array of actions, where each action has a "type" field that is either "open_file" or "write_file". 
 
 		Your response should be in the following format and nothing else (EXAMPLE):

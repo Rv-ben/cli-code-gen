@@ -16,6 +16,7 @@ const defaultOllamaEndpoint = "http://localhost:11434"
 type Client struct {
 	baseURL    string
 	httpClient *http.Client
+	history    []Message
 }
 
 type ChatRequest struct {
@@ -39,6 +40,7 @@ func NewClient(baseURL string) *Client {
 		httpClient: &http.Client{
 			Timeout: time.Second * 300, // 5 minute timeout
 		},
+		history: make([]Message, 0),
 	}
 }
 
@@ -58,12 +60,24 @@ func NewOllamaClient() *Client {
 	return &Client{
 		baseURL:    baseURL,
 		httpClient: &http.Client{},
+		history:    make([]Message, 0),
 	}
 }
 
 func (r *ChatRequest) WithFormat(format string) *ChatRequest {
 	r.Format = format
 	return r
+}
+
+func (c *Client) AddMessage(role, content string) {
+	c.history = append(c.history, Message{
+		Role:    role,
+		Content: content,
+	})
+}
+
+func (c *Client) ClearHistory() {
+	c.history = make([]Message, 0)
 }
 
 func (c *Client) ChatCompletion(req interface{}) (string, error) {
@@ -94,6 +108,16 @@ func (c *Client) ChatCompletion(req interface{}) (string, error) {
 			return "", fmt.Errorf("invalid request type")
 		}
 	}
+
+	// Combine history with new messages
+	if len(chatReq.Messages) > 0 {
+		// Add the new message to history
+		c.AddMessage(chatReq.Messages[len(chatReq.Messages)-1].Role,
+			chatReq.Messages[len(chatReq.Messages)-1].Content)
+	}
+
+	// Use the full history for the request
+	chatReq.Messages = c.history
 
 	// Convert the request to JSON
 	jsonData, err := json.Marshal(chatReq)
@@ -148,6 +172,11 @@ func (c *Client) ChatCompletion(req interface{}) (string, error) {
 	// Check for scanner errors
 	if err := scanner.Err(); err != nil {
 		return "", fmt.Errorf("error reading response: %w", err)
+	}
+
+	// After getting a successful response, add it to history
+	if responseString != "" {
+		c.AddMessage("assistant", responseString)
 	}
 
 	return responseString, nil

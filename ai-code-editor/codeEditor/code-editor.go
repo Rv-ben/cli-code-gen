@@ -137,13 +137,7 @@ func (c *CodeEditor) ExecuteAction(action codeEditor.BaseAction) string {
 
 		log.Printf("File context provider created with path: %s", fileAction.Path)
 
-		wd, err := os.Getwd()
-		if err != nil {
-			log.Printf("Error getting working directory: %v", err)
-			return ""
-		}
-
-		fileContents := fileContextProvider.GetFileContents(wd)
+		fileContents := fileContextProvider.GetFileContents()
 
 		return fileContents
 	}

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/joho/godotenv"
 )
@@ -44,8 +45,22 @@ func main() {
 
 	fmt.Printf("Using model: %s\n", model)
 
-	fileContextProvider := services.NewFileContextProvider(files)
-	fileContents := fileContextProvider.GetFileContents(currentDir)
+	var fileContents string = ""
+	if len(files) > 0 {
+		// Files will be relative to the current directory
+		// We need to get the full path of the files
+		for i, file := range files {
+			fullPath, err := filepath.Abs(file)
+			if err != nil {
+				log.Printf("Error getting full path for file %s: %v", file, err)
+				continue
+			}
+			files[i] = fullPath
+		}
+
+		fileContextProvider := services.NewFileContextProvider(files)
+		fileContents = fileContextProvider.GetFileContents()
+	}
 
 	// Add file contents to prompt if any files were read
 	var prompt = userPrompt

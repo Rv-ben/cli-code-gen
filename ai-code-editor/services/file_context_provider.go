@@ -26,6 +26,7 @@ func (f *FileContextProvider) GetFileContent(path string) (string, error) {
 	// Clean the path to remove any duplicate separators
 	cleanPath := filepath.Clean(path)
 
+	log.Printf("Getting content for file: %s", cleanPath)
 	content, err := os.ReadFile(cleanPath)
 	if err != nil {
 		log.Printf("Error reading file %s: %v", cleanPath, err)
@@ -35,7 +36,7 @@ func (f *FileContextProvider) GetFileContent(path string) (string, error) {
 	return string(content), nil
 }
 
-func (f *FileContextProvider) GetFileContents(currentDir string) string {
+func (f *FileContextProvider) GetFileContents() string {
 	log.Printf("Getting contents for files: %v", f.files)
 	fileContents := ""
 

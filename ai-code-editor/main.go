@@ -8,9 +8,17 @@ import (
 	"fmt"
 	"log"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	// Load .env file
+	err := godotenv.Load()
+	if err != nil {
+		log.Printf("Warning: Error loading .env file: %v", err)
+	}
+
 	config := config.Load()
 	ollamaClient := ollama.NewClient(config.OllamaBaseURL)
 

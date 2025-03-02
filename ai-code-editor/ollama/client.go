@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -37,6 +38,25 @@ func NewClient(baseURL string) *Client {
 		httpClient: &http.Client{
 			Timeout: time.Second * 300, // 5 minute timeout
 		},
+	}
+}
+
+func NewOllamaClient() *Client {
+	host := os.Getenv("OLLAMA_HOST")
+	if host == "" {
+		host = "localhost" // default value
+	}
+
+	port := os.Getenv("OLLAMA_PORT")
+	if port == "" {
+		port = "11434" // default value
+	}
+
+	baseURL := fmt.Sprintf("http://%s:%s", host, port)
+
+	return &Client{
+		baseURL:    baseURL,
+		httpClient: &http.Client{},
 	}
 }
 

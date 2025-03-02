@@ -68,6 +68,13 @@ func (c *Client) ChatCompletion(req interface{}) (string, error) {
 		return "", fmt.Errorf("server returned status code %d: %s", response.StatusCode, string(body))
 	}
 
+	// Set cookie for the next request
+	cookie := http.Cookie{
+		Name:  "session_id",
+		Value: response.Header.Get("Set-Cookie"),
+	}
+	request.Header.Set("Cookie", cookie.String())
+
 	var responseString string = ""
 
 	scanner := bufio.NewScanner(response.Body)

@@ -60,8 +60,11 @@ func main() {
 		log.Printf("Error generating directory tree: %v", err)
 	}
 
+	log.Printf("Working directory: %s", currentDir)
+
 	prompt = prompt + "\n\n" + treeText
+	completePrompt := basePromptProvider.GetPrompt() + "\n" + "THE CURRENT WORKING DIRECTORY IS: " + currentDir + "\n" + prompt
 
 	codeEditor := codeEditor.NewCodeEditor()
-	codeEditor.EditCodeBase(ollamaClient, model, basePromptProvider.GetPrompt()+"\n"+prompt)
+	codeEditor.EditCodeBase(ollamaClient, model, completePrompt)
 }

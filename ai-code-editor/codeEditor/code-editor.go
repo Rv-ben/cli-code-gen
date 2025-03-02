@@ -34,10 +34,16 @@ func (c *CodeEditor) EditCodeBase(client *ollama.Client, model string, initalPro
 	}
 
 	// Execute the actions
+
+	var prompt string = ""
 	for _, action := range actions {
-		c.ExecuteAction(action)
+		fileContents := c.ExecuteAction(action)
+		if fileContents != "" {
+			prompt += fileContents
+		}
 	}
 
+	c.SendMessage(client, model, prompt)
 }
 
 func (c *CodeEditor) SendMessage(client *ollama.Client, model string, prompt string) string {
@@ -63,7 +69,7 @@ func (c *CodeEditor) SendMessage(client *ollama.Client, model string, prompt str
 	return resp
 }
 
-func (c *CodeEditor) ExecuteAction(action codeEditor.BaseAction) {
+func (c *CodeEditor) ExecuteAction(action codeEditor.BaseAction) string {
 	log.Printf("Executing action: %v", action.ToString())
 
 	if action.GetType() == "open_file" {
@@ -72,7 +78,7 @@ func (c *CodeEditor) ExecuteAction(action codeEditor.BaseAction) {
 		fileAction, ok := action.(*codeEditor.RequestFileAction)
 		if !ok {
 			log.Printf("Error: Failed to convert action to RequestFileAction")
-			return
+			return ""
 		}
 		fileContextProvider := services.NewFileContextProvider([]string{fileAction.Path})
 
@@ -81,11 +87,15 @@ func (c *CodeEditor) ExecuteAction(action codeEditor.BaseAction) {
 		wd, err := os.Getwd()
 		if err != nil {
 			log.Printf("Error getting working directory: %v", err)
-			return
+			return ""
 		}
 
 		fileContents := fileContextProvider.GetFileContents(wd)
 
 		log.Printf("File contents: %s", fileContents)
+
+		return fileContents
 	}
+
+	return ""
 }

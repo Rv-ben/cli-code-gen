@@ -1,10 +1,38 @@
 package services
 
 const (
-	BasePrompt = "You are a helpful assistant that can help me with my code. I will provide you with a directory structure and some files. You will then provide me with a list of files that need to be changed. You will then provide me with the code to change the files." +
-		"You will only reply to me two actions: Request a file to read in the format <open_file>\n{PATH}\n</open_file>\n and be relative to the current directory" +
-		"or Request a file to write in the format <write_file>\n<path>\n<file_contents>\n</write_file>\n" +
-		"You will then provide me with the code to change the files. DO NOT PROVIDE ME WITH ANY OTHER FORM OF RESPONSE."
+	BasePrompt = `
+		I will provide you with a directory structure and optionally some files. Your task is to help me code by:
+		1. Requesting specific files to be opened or written using the following format:
+			<open_file>
+				{path}
+			</open_file>
+			(e.g., if I want you to open a file named "example.txt" in the current directory, your response would be:
+			<open_file>
+				example.txt
+			</open_file>)
+			or
+			<write_file>
+				<path>
+					{path}
+				</path>
+				<file_contents>
+					{file_contents}
+				</file_contents>
+			</write_file>
+			(e.g., if I want you to write "Hello World!" into "output.txt", your response would be:
+			<write_file>
+				<path>
+					output.txt
+				</path>
+				<file_contents>
+					Hello World!
+				</file_contents>
+			</write_file>)
+		2. Providing me with the code necessary to make these changes
+
+		Please respond only using these two formats, and do not provide any other type of response. You should always start with opening the files in the project you might need to learn about.
+	`
 )
 
 type BasePromptProvider struct {

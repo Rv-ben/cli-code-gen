@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -22,7 +23,7 @@ type Client struct {
 type ChatRequest struct {
 	Model    string    `json:"model"`
 	Messages []Message `json:"messages"`
-	Format   string    `json:"format,omitempty"`
+	Format   any       `json:"format,omitempty"` // Change to any type to support object formats
 }
 
 type Message struct {
@@ -64,7 +65,7 @@ func NewOllamaClient() *Client {
 	}
 }
 
-func (r *ChatRequest) WithFormat(format string) *ChatRequest {
+func (r *ChatRequest) WithFormat(format any) *ChatRequest {
 	r.Format = format
 	return r
 }
@@ -145,6 +146,8 @@ func (c *Client) ChatCompletion(req interface{}) (string, error) {
 		body, _ := io.ReadAll(response.Body)
 		return "", fmt.Errorf("server returned status code %d: %s", response.StatusCode, string(body))
 	}
+
+	log.Printf("Response: %+v", response)
 
 	// Set cookie for the next request
 	cookie := http.Cookie{

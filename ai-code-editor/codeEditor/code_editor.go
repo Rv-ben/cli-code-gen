@@ -1,7 +1,9 @@
 package codeEditor
 
 import (
-	codeEditor "ai-code-editor/codeEditor/actions"
+	codeEditorActions "ai-code-editor/codeEditor/actions"
+	codeEditor "ai-code-editor/codeEditor/schemas"
+	codeEditorSchemas "ai-code-editor/codeEditor/schemas"
 	"ai-code-editor/ollama"
 	"ai-code-editor/services"
 	"fmt"
@@ -27,31 +29,15 @@ func (c *CodeEditor) LearnFromFiles(client *ollama.Client, model string, initial
 	// Create a parser to parse the response
 	parser := NewAiResponseParser()
 
-	var expectedFormat string = `
-		{
-			"type": "object",
-			"properties": {
-				"actions": {
-					"type": "array",
-					"items": {
-						"type": "object",
-						"properties": {
-							"type": "open_file",
-							"path": "path/to/file",
-						},
-						"required": ["type", "path"]
-					}
-				}
-			}
-		}
-	`
+	// Use the new schema object
+	expectedFormat := codeEditorSchemas.NewFileRequestSchema()
 
 	var initialReply string = c.SendMessage(client, model, expectedFormat, initialPrompt)
 
 	log.Printf("Initial reply:\n %v", initialReply)
 
 	// Parse the response
-	var actions []codeEditor.BaseAction = parser.ParseResponse(initialReply)
+	var actions []codeEditorActions.BaseAction = parser.ParseResponse(initialReply)
 
 	if len(actions) == 0 {
 		log.Printf("No actions found in response")
@@ -91,45 +77,25 @@ func (c *CodeEditor) EditCode(client *ollama.Client, model string) {
 		Respond using JSON.
 	`
 
-	var expectedFormat string = `
-		{
-			"type": "object",
-			"properties": {
-				"actions": {
-					"type": "array",
-					"items": {
-						"type": "object",
-						"properties": {
-							"type": "write_file",
-							"path": "path/to/file",
-							"content": "file contents here",
-							"start_line": x,
-							"end_line": y,
-							"action": "replace"
-						},
-						"required": ["type", "path", "content", "start_line", "end_line", "action"]
-					}
-				}
-			}
-		}
-	`
+	// Use the new schema object
+	expectedFormat := codeEditor.NewEditRequestSchema()
 
 	var reply string = c.SendMessage(client, model, expectedFormat, prompt)
 
 	log.Printf("Edit Reply: %s", reply)
 
-	var actions []codeEditor.BaseAction = parser.ParseResponse(reply)
+	var actions []codeEditorActions.BaseAction = parser.ParseResponse(reply)
 
 	// Seperate each action by file
-	var fileActions map[string][]codeEditor.BaseAction = make(map[string][]codeEditor.BaseAction)
+	var fileActions map[string][]codeEditorActions.BaseAction = make(map[string][]codeEditorActions.BaseAction)
 
 	// Group actions by file path
 	for _, action := range actions {
 		if action.GetType() == "write_file" {
-			writeAction := action.(*codeEditor.EditFileAction)
+			writeAction := action.(*codeEditorActions.EditFileAction)
 			path := writeAction.Path
 			if _, exists := fileActions[path]; !exists {
-				fileActions[path] = make([]codeEditor.BaseAction, 0)
+				fileActions[path] = make([]codeEditorActions.BaseAction, 0)
 			}
 			fileActions[path] = append(fileActions[path], action)
 		}
@@ -143,7 +109,7 @@ func (c *CodeEditor) EditCode(client *ollama.Client, model string) {
 	}
 }
 
-func (c *CodeEditor) SendMessage(client *ollama.Client, model string, jsonFormat string, prompt string) string {
+func (c *CodeEditor) SendMessage(client *ollama.Client, model string, jsonFormat any, prompt string) string {
 
 	req := ollama.ChatRequest{
 		Model: model,
@@ -171,13 +137,13 @@ func (c *CodeEditor) SendMessage(client *ollama.Client, model string, jsonFormat
 	return resp
 }
 
-func (c *CodeEditor) ExecuteAction(action codeEditor.BaseAction) string {
+func (c *CodeEditor) ExecuteAction(action codeEditorActions.BaseAction) string {
 	log.Printf("Executing action: %v", action.ToString())
 
 	if action.GetType() == "open_file" {
 		log.Printf("Executing RequestFileAction")
 
-		fileAction, ok := action.(*codeEditor.RequestFileAction)
+		fileAction, ok := action.(*codeEditorActions.RequestFileAction)
 		if !ok {
 			log.Printf("Error: Failed to convert action to RequestFileAction")
 			return ""
@@ -194,20 +160,20 @@ func (c *CodeEditor) ExecuteAction(action codeEditor.BaseAction) string {
 	return ""
 }
 
-func (c *CodeEditor) ExecuteEditFileAction(actions []codeEditor.BaseAction) {
+func (c *CodeEditor) ExecuteEditFileAction(actions []codeEditorActions.BaseAction) {
 	if len(actions) == 0 {
 		log.Printf("Warning: No actions to execute")
 		return
 	}
 
 	// Ensure all actions are for the same file
-	firstPath := actions[0].(*codeEditor.EditFileAction).Path
+	firstPath := actions[0].(*codeEditorActions.EditFileAction).Path
 	for _, action := range actions {
 		if action.GetType() != "write_file" {
 			log.Printf("Error: All actions must be write_file actions")
 			return
 		}
-		editAction := action.(*codeEditor.EditFileAction)
+		editAction := action.(*codeEditorActions.EditFileAction)
 		if editAction.Path != firstPath {
 			log.Printf("Error: All actions must be for the same file")
 			return
@@ -215,10 +181,10 @@ func (c *CodeEditor) ExecuteEditFileAction(actions []codeEditor.BaseAction) {
 	}
 
 	// Convert each action to an EditFileAction
-	var editFileActions []codeEditor.EditFileAction = make([]codeEditor.EditFileAction, len(actions))
+	var editFileActions []codeEditorActions.EditFileAction = make([]codeEditorActions.EditFileAction, len(actions))
 
 	for i, action := range actions {
-		editFileActions[i] = *action.(*codeEditor.EditFileAction)
+		editFileActions[i] = *action.(*codeEditorActions.EditFileAction)
 	}
 
 	services.EditFile(firstPath, editFileActions)

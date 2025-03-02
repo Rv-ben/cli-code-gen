@@ -1,8 +1,9 @@
 package main
 
 import (
-	// "ai-code-editor/config"
-	// "ai-code-editor/ollama"
+	"ai-code-editor/codeEditor"
+	"ai-code-editor/config"
+	"ai-code-editor/ollama"
 	"ai-code-editor/services"
 	"fmt"
 	"log"
@@ -18,8 +19,8 @@ func main() {
 		log.Printf("Warning: Error loading .env file: %v", err)
 	}
 
-	// config := config.Load()
-	// ollamaClient := ollama.NewClient(config.OllamaBaseURL)
+	config := config.Load()
+	ollamaClient := ollama.NewClient(config.OllamaBaseURL)
 
 	basePromptProvider := services.NewBasePromptProvider()
 
@@ -57,13 +58,13 @@ func main() {
 	// Get the tree as a string
 	treeText := treeService.GetDirectoryString(currentDir)
 
-	log.Printf("Working directory: %s", currentDir)
-
 	prompt := userPrompt + "\n\n" + treeText
 
-	userPrompt = "\n\n USER TASK: " + userPrompt + "\n\n"
+	userPrompt = "\n\n USER TASK: |" + userPrompt + "|"
 
 	completePrompt := basePromptProvider.GetPrompt() + "\n\n" + "THE CURRENT WORKING DIRECTORY IS: " + currentDir + "\n\n" + prompt + userPrompt
 
-	println(completePrompt)
+	var codeEditingService = codeEditor.NewCodeEditor()
+
+	codeEditingService.EditCodeBase(ollamaClient, model, completePrompt)
 }

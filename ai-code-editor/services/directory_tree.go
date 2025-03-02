@@ -100,54 +100,6 @@ func (dt *DirectoryTree) Close() {
 	}
 }
 
-// buildDirectoryText recursively builds a text representation of the directory structure
-func (dt *DirectoryTree) buildDirectoryText(path string, depth int) (string, error) {
-	if depth > dt.maxDepth {
-		return "", nil
-	}
-
-	info, err := os.Stat(path)
-	if err != nil {
-		return "", err
-	}
-
-	if strings.HasPrefix(info.Name(), ".") {
-		return "", nil
-	}
-
-	for _, skipPath := range dt.skipPaths {
-		if strings.Contains(path, skipPath) {
-			return "", nil
-		}
-	}
-
-	var sb strings.Builder
-
-	if info.IsDir() {
-		entries, err := os.ReadDir(path)
-		if err != nil {
-			return "", err
-		}
-
-		for _, entry := range entries {
-			childPath := filepath.Join(path, entry.Name())
-			childText, err := dt.buildDirectoryText(childPath, depth+1)
-			if err != nil {
-				return "", err
-			}
-			if childText != "" {
-				sb.WriteString(childText)
-			}
-		}
-	} else {
-		sb.WriteString("-------\n")
-		sb.WriteString(path + "\n")
-		sb.WriteString(dt.GetTree(path) + "\n")
-	}
-
-	return sb.String(), nil
-}
-
 func (dt *DirectoryTree) GetDirectoryString(rootPath string) string {
 	structure, err := dt.GenerateTree(rootPath)
 	if err != nil {
@@ -205,7 +157,6 @@ func (dt *DirectoryTree) GetFunctionDeclarations(node *tree_sitter.Node, fileCon
 
 	// Traverse the AST
 	for {
-		log.Printf("Cursor node: %s", cursor.Node().Kind())
 		if cursor.Node().Kind() == "method_declaration" || cursor.Node().Kind() == "function_declaration" {
 			funcNode := cursor.Node()
 

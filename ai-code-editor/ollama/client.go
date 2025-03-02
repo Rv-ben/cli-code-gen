@@ -46,9 +46,6 @@ func (c *Client) ChatCompletion(req interface{}) (*http.Response, error) {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	// Debug: Print request payload
-	fmt.Printf("Request payload: %s\n", string(jsonData))
-
 	request, err := http.NewRequest(
 		"POST",
 		fmt.Sprintf("%s/api/chat", c.baseURL),

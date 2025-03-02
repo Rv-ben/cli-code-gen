@@ -4,6 +4,9 @@ type EditFileAction struct {
 	actionName string
 	Path       string
 	Content    string
+	StartLine  int
+	EndLine    int
+	Action     string
 }
 
 func NewEditFileAction(path string, content string) *EditFileAction {
@@ -20,4 +23,16 @@ func (e *EditFileAction) ToString() string {
 
 func (e *EditFileAction) GetType() string {
 	return e.actionName
+}
+
+func (e *EditFileAction) GetStartLine() int {
+	return e.StartLine
+}
+
+func (e *EditFileAction) GetEndLine() int {
+	return e.EndLine
+}
+
+func (e *EditFileAction) GetAction() string {
+	return e.Action
 }

@@ -16,7 +16,10 @@ const (
 		{
 			"type": "write_file",
 			"path": "path/to/file",
-			"content": "file contents here"
+			"content": "file contents here",
+			"action": "replace" // or "insert"
+			"start_line": 1,
+			"end_line": 10
 		}
 
 		Example response:

@@ -6,7 +6,6 @@ import (
 	"ai-code-editor/services"
 	"fmt"
 	"log"
-	"os"
 )
 
 type CodeEditor struct {
@@ -69,7 +68,6 @@ func (c *CodeEditor) EditCode(client *ollama.Client, model string) {
 
 	var prompt string = `
 		Edit the code to solve the USER TASK. Use the json structure to write the code.
-		You should try your best to not make drastic changes to the code.
 		You should respond with an array of actions, where each action has a "type" field that is either "open_file" or "write_file". 
 
 		IMPORTANT: DO NOT MAKE ANY CHANGES TO THE CODE THAT ARE NOT SPECIFIED IN THE USER TASK.
@@ -80,7 +78,10 @@ func (c *CodeEditor) EditCode(client *ollama.Client, model string) {
 				{
 					"type": "write_file",
 					"path": "path/to/file",
-					"content": "file contents here"
+					"content": "file contents here",
+					"start_line": x,
+					"end_line": y,
+					"action": "replace" // or "insert"
 				}
 			]
 		}
@@ -92,8 +93,17 @@ func (c *CodeEditor) EditCode(client *ollama.Client, model string) {
 
 	var actions []codeEditor.BaseAction = parser.ParseResponse(reply)
 
+	// Seperate each action by file
+	var fileActions [][]codeEditor.BaseAction = make([][]codeEditor.BaseAction, 0)
+
 	for _, action := range actions {
-		c.ExecuteAction(action)
+		if action.GetType() == "write_file" {
+			fileActions = append(fileActions, []codeEditor.BaseAction{action})
+		}
+	}
+
+	for _, fileAction := range fileActions {
+		c.ExecuteEditFileAction(fileAction)
 	}
 }
 
@@ -145,21 +155,25 @@ func (c *CodeEditor) ExecuteAction(action codeEditor.BaseAction) string {
 		return fileContents
 	}
 
-	if action.GetType() == "write_file" {
-		log.Printf("Executing WriteFileAction")
+	return ""
+}
 
-		fileAction, ok := action.(*codeEditor.EditFileAction)
-		if !ok {
-			log.Printf("Error: Failed to convert action to EditFileAction")
-			return ""
+func (c *CodeEditor) ExecuteEditFileAction(actions []codeEditor.BaseAction) {
+
+	// Ensure all actions are for the same file
+	for _, action := range actions {
+		if action.GetType() != "write_file" {
+			log.Printf("Error: All actions must be for the same file")
+			return
 		}
-
-		log.Printf("Writing file: %s", fileAction.Path)
-
-		os.WriteFile(fileAction.Path, []byte(fileAction.Content), 0644)
-
-		return ""
 	}
 
-	return ""
+	// Convert each action to an EditFileAction
+	var editFileActions []codeEditor.EditFileAction = make([]codeEditor.EditFileAction, 0)
+
+	for _, action := range actions {
+		editFileActions = append(editFileActions, *action.(*codeEditor.EditFileAction))
+	}
+
+	services.EditFile(editFileActions[0].Path, editFileActions)
 }

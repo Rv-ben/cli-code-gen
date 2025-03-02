@@ -18,10 +18,16 @@ func NewCodeEditor() *CodeEditor {
 
 func (c *CodeEditor) EditCodeBase(client *ollama.Client, model string, initalPrompt string) {
 
+	// Reading code
+	c.LearnFromFiles(client, model, initalPrompt)
+
+}
+
+func (c *CodeEditor) LearnFromFiles(client *ollama.Client, model string, initialPrompt string) {
 	// Create a parser to parse the response
 	parser := NewAiResponseParser()
 
-	var initialReply string = c.SendMessage(client, model, true, initalPrompt)
+	var initialReply string = c.SendMessage(client, model, true, initialPrompt)
 
 	log.Printf("Initial reply:\n %v", initialReply)
 
@@ -56,9 +62,30 @@ func (c *CodeEditor) EditCodeBase(client *ollama.Client, model string, initalPro
 		log.Printf("Intermediate reply: %s", reply)
 	}
 
-	var learnedReply string = c.SendMessage(client, model, false, "Tell me what you learned from the files, you don't need to write in json format")
+}
 
-	log.Printf("Learned reply: %s", learnedReply)
+func (c *CodeEditor) EditCode(client *ollama.Client, model string) {
+	// Create a parser to parse the response
+	parser := NewAiResponseParser()
+
+	var prompt string = `
+		Edit the code to solve the USER TASK. Use the json structure to write the code.
+
+		For writing files:
+		{
+			"type": "write_file",
+			"path": "path/to/file",
+			"content": "file contents here"
+		}
+	`
+
+	var reply string = c.SendMessage(client, model, true, prompt)
+
+	var actions []codeEditor.BaseAction = parser.ParseResponse(reply)
+
+	for _, action := range actions {
+		c.ExecuteAction(action)
+	}
 }
 
 func (c *CodeEditor) SendMessage(client *ollama.Client, model string, isJson bool, prompt string) string {
@@ -113,6 +140,22 @@ func (c *CodeEditor) ExecuteAction(action codeEditor.BaseAction) string {
 		fileContents := fileContextProvider.GetFileContents(wd)
 
 		return fileContents
+	}
+
+	if action.GetType() == "write_file" {
+		log.Printf("Executing WriteFileAction")
+
+		fileAction, ok := action.(*codeEditor.EditFileAction)
+		if !ok {
+			log.Printf("Error: Failed to convert action to EditFileAction")
+			return ""
+		}
+
+		log.Printf("Writing file: %s", fileAction.Path)
+
+		os.WriteFile(fileAction.Path, []byte(fileAction.Content), 0644)
+
+		return ""
 	}
 
 	return ""

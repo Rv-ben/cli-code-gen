@@ -94,16 +94,25 @@ func (c *CodeEditor) EditCode(client *ollama.Client, model string) {
 	var actions []codeEditor.BaseAction = parser.ParseResponse(reply)
 
 	// Seperate each action by file
-	var fileActions [][]codeEditor.BaseAction = make([][]codeEditor.BaseAction, 0)
+	var fileActions map[string][]codeEditor.BaseAction = make(map[string][]codeEditor.BaseAction)
 
+	// Group actions by file path
 	for _, action := range actions {
 		if action.GetType() == "write_file" {
-			fileActions = append(fileActions, []codeEditor.BaseAction{action})
+			writeAction := action.(*codeEditor.EditFileAction)
+			path := writeAction.Path
+			if _, exists := fileActions[path]; !exists {
+				fileActions[path] = make([]codeEditor.BaseAction, 0)
+			}
+			fileActions[path] = append(fileActions[path], action)
 		}
 	}
 
-	for _, fileAction := range fileActions {
-		c.ExecuteEditFileAction(fileAction)
+	// Execute actions for each file
+	for _, actions := range fileActions {
+		if len(actions) > 0 {
+			c.ExecuteEditFileAction(actions)
+		}
 	}
 }
 
@@ -159,21 +168,31 @@ func (c *CodeEditor) ExecuteAction(action codeEditor.BaseAction) string {
 }
 
 func (c *CodeEditor) ExecuteEditFileAction(actions []codeEditor.BaseAction) {
+	if len(actions) == 0 {
+		log.Printf("Warning: No actions to execute")
+		return
+	}
 
 	// Ensure all actions are for the same file
+	firstPath := actions[0].(*codeEditor.EditFileAction).Path
 	for _, action := range actions {
 		if action.GetType() != "write_file" {
+			log.Printf("Error: All actions must be write_file actions")
+			return
+		}
+		editAction := action.(*codeEditor.EditFileAction)
+		if editAction.Path != firstPath {
 			log.Printf("Error: All actions must be for the same file")
 			return
 		}
 	}
 
 	// Convert each action to an EditFileAction
-	var editFileActions []codeEditor.EditFileAction = make([]codeEditor.EditFileAction, 0)
+	var editFileActions []codeEditor.EditFileAction = make([]codeEditor.EditFileAction, len(actions))
 
-	for _, action := range actions {
-		editFileActions = append(editFileActions, *action.(*codeEditor.EditFileAction))
+	for i, action := range actions {
+		editFileActions[i] = *action.(*codeEditor.EditFileAction)
 	}
 
-	services.EditFile(editFileActions[0].Path, editFileActions)
+	services.EditFile(firstPath, editFileActions)
 }

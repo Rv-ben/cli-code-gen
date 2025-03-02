@@ -16,7 +16,8 @@ func EditFile(path string, actions []codeEditor.EditFileAction) error {
 
 	lines := strings.Split(string(content), "\n")
 
-	// First handle all replace actions
+	// Sort actions by line number in descending order to avoid offset issues
+	// Process replacements first, then insertions
 	replaceActions := make([]codeEditor.EditFileAction, 0)
 	insertActions := make([]codeEditor.EditFileAction, 0)
 
@@ -33,20 +34,42 @@ func EditFile(path string, actions []codeEditor.EditFileAction) error {
 		// Replace lines between start and end with new content
 		newLines := strings.Split(action.Content, "\n")
 		startLine := action.GetStartLine() - 1 // Convert to 0-based index
-		endLine := action.GetEndLine() - 1
+		endLine := action.GetEndLine() - 1     // Convert to 0-based index
 
-		// Remove old lines and insert new ones
+		// Validate indices
+		if startLine < 0 {
+			startLine = 0
+		}
+		if endLine >= len(lines) {
+			endLine = len(lines) - 1
+		}
+		if startLine > endLine {
+			continue // Skip invalid range
+		}
+
+		// Create new slice with replaced content
 		lines = append(lines[:startLine], append(newLines, lines[endLine+1:]...)...)
 	}
 
 	// Execute insert actions after
 	for _, action := range insertActions {
-		// Insert new lines at specified position
 		newLines := strings.Split(action.Content, "\n")
-		insertPos := action.GetStartLine() - 1
+		insertPos := action.GetStartLine() - 1 // Convert to 0-based index
+
+		// Validate insertion position
+		if insertPos < 0 {
+			insertPos = 0
+		}
+		if insertPos > len(lines) {
+			insertPos = len(lines)
+		}
 
 		// Insert new lines at position
-		lines = append(lines[:insertPos], append(newLines, lines[insertPos:]...)...)
+		if insertPos == len(lines) {
+			lines = append(lines, newLines...)
+		} else {
+			lines = append(lines[:insertPos], append(newLines, lines[insertPos:]...)...)
+		}
 	}
 
 	// Write back to file

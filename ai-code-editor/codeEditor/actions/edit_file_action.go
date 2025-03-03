@@ -11,14 +11,14 @@ type EditFileAction struct {
 
 func NewEditFileAction(path string, content string) *EditFileAction {
 	return &EditFileAction{
-		actionName: "write_file",
+		actionName: "edit_file",
 		Path:       path,
 		Content:    content,
 	}
 }
 
 func (e *EditFileAction) ToString() string {
-	return "<write_file>\n<path>" + e.Path + "\n<file_contents>" + e.Content + "\n</write_file>"
+	return "<edit_file>\n<path>" + e.Path + "\n<file_contents>" + e.Content + "\n</edit_file>"
 }
 
 func (e *EditFileAction) GetType() string {

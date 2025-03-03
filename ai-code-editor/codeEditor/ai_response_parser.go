@@ -48,7 +48,7 @@ func (a *AiResponseParser) ParseResponse(response string) []codeEditor.BaseActio
 		switch action.Type {
 		case "open_file":
 			actions = append(actions, codeEditor.NewRequestFileAction(action.Path))
-		case "write_file":
+		case "edit_file":
 			actions = append(actions, codeEditor.NewEditFileAction(action.Path, action.Content))
 		default:
 			log.Printf("Unknown action type: %s", action.Type)

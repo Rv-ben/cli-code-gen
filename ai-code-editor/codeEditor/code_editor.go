@@ -32,34 +32,30 @@ func (c *CodeEditor) LearnFromFiles(client *ollama.Client, model string, initial
 	// Use the new schema object
 	expectedFormat := codeEditorSchemas.NewFileRequestSchema()
 
-	var initialReply string = c.SendMessage(client, model, expectedFormat, initialPrompt)
+	var initialReply string = c.SendMessage(client, model, expectedFormat, initialPrompt+"\n\n FIND CONTEXT")
 
 	log.Printf("Initial reply:\n %v", initialReply)
 
 	// Parse the response
 	var actions []codeEditorActions.BaseAction = parser.ParseResponse(initialReply)
-
-	if len(actions) == 0 {
-		log.Printf("No actions found in response")
-		return
-	}
-
 	// Execute the actions
 	// For 3 times
 	var fileContents string = ""
 	var reply string = ""
 
-	for i := 0; i < 0; i++ {
+	for range 1 {
 		if len(actions) == 0 {
 			log.Printf("No actions found in response")
 			break
 		}
 
+		log.Printf("Attempting to execute actions: %v", actions)
+
 		for _, action := range actions {
 			fileContents += "\n\n" + c.ExecuteAction(action)
 		}
 
-		reply = c.SendMessage(client, model, "json", fileContents+"\n\nDo you need more context to solve the USER TASK? If you need more files, provide more files to open, if not don't write anything")
+		reply = c.SendMessage(client, model, expectedFormat, fileContents+"\n\nDo you need more context to solve the {{USER TASK}}? If you need more files, provide more files to open, return an empty list of actions if you don't need more context. Respond with JSON.")
 		actions = parser.ParseResponse(reply)
 
 		log.Printf("Intermediate reply: %s", reply)
@@ -73,18 +69,27 @@ func (c *CodeEditor) EditCode(client *ollama.Client, model string) {
 
 	var prompt string = `
 		Edit the code to solve the USER TASK. Use the json structure to write the code.
-		You should respond with an array of actions, where each action has a "type" field that is "write_file" only.
+		You should respond with an array of actions, where each action has a "type" field that is "edit_file" only.
+		Always try to edit the code rather than rewrite it.
 
 		Example response:
 		{
 			"actions": [
 				{
-					"type": "write_file",
+					"type": "edit_file",
 					"path": "path/to/file",
 					"content": "file contents here",
 					"start_line": 1, // Required
 					"end_line": 10, // Required
 					"action": "replace" // or "insert" // Required
+				},
+				{
+					"type": "edit_file",
+					"path": "path/to/file",
+					"content": "file contents here",
+					"start_line": 13
+					"end_line": 21,
+					"action": "replace"
 				}
 			]
 		}
@@ -106,9 +111,9 @@ func (c *CodeEditor) EditCode(client *ollama.Client, model string) {
 
 	// Group actions by file path
 	for _, action := range actions {
-		if action.GetType() == "write_file" {
-			writeAction := action.(*codeEditorActions.EditFileAction)
-			path := writeAction.Path
+		if action.GetType() == "edit_file" {
+			editAction := action.(*codeEditorActions.EditFileAction)
+			path := editAction.Path
 			if _, exists := fileActions[path]; !exists {
 				fileActions[path] = make([]codeEditorActions.BaseAction, 0)
 			}
@@ -184,8 +189,8 @@ func (c *CodeEditor) ExecuteEditFileAction(actions []codeEditorActions.BaseActio
 	// Ensure all actions are for the same file
 	firstPath := actions[0].(*codeEditorActions.EditFileAction).Path
 	for _, action := range actions {
-		if action.GetType() != "write_file" {
-			log.Printf("Error: All actions must be write_file actions")
+		if action.GetType() != "edit_file" {
+			log.Printf("Error: All actions must be edit_file actions")
 			return
 		}
 		editAction := action.(*codeEditorActions.EditFileAction)

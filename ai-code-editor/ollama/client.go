@@ -75,6 +75,9 @@ func (c *Client) AddMessage(role, content string) {
 		Role:    role,
 		Content: content,
 	})
+
+	// For debugging
+	log.Printf("Added message to history: %+v", c.history)
 }
 
 func (c *Client) ClearHistory() {
@@ -148,13 +151,6 @@ func (c *Client) ChatCompletion(req interface{}) (string, error) {
 	}
 
 	log.Printf("Response: %+v", response)
-
-	// Set cookie for the next request
-	cookie := http.Cookie{
-		Name:  "session_id",
-		Value: response.Header.Get("Set-Cookie"),
-	}
-	request.Header.Set("Cookie", cookie.String())
 
 	var responseString string = ""
 

@@ -32,7 +32,7 @@ func (c *CodeEditor) LearnFromFiles(client *ollama.Client, model string, basePro
 	// Use the new schema object
 	expectedFormat := codeEditorSchemas.NewFileRequestSchema()
 
-	var initialReply string = c.SendMessage(client, model, expectedFormat, basePrompt+"\n\n {{USER TASK}}="+userTask+"\n\n FIND CONTEXT. You should open files that are relevant to the USER TASK.")
+	var initialReply string = c.SendMessage(client, model, expectedFormat, basePrompt+"\n\n USER TASK="+userTask+"\n\n  Open at least 1 file that is relevant to the USER TASK. FIND CONTEXT.")
 
 	log.Printf("Initial reply:\n %v", initialReply)
 
@@ -55,7 +55,7 @@ func (c *CodeEditor) LearnFromFiles(client *ollama.Client, model string, basePro
 			fileContents += "\n\n" + c.ExecuteAction(action)
 		}
 
-		reply = c.SendMessage(client, model, expectedFormat, fileContents+"\n\nDo you need more context to solve the {{USER TASK}}? If you need more files, provide more files to open, return an empty list of actions if you don't need more context. Respond with JSON.")
+		reply = c.SendMessage(client, model, expectedFormat, fileContents+"\n\nDo you need more context to solve the USER TASK? If you need more files, provide more files to open, return an empty list of actions if you don't need more context. Respond with JSON.")
 		actions = parser.ParseResponse(reply)
 
 		log.Printf("Intermediate reply: %s", reply)
@@ -68,34 +68,24 @@ func (c *CodeEditor) EditCode(client *ollama.Client, model string, userTask stri
 	parser := NewAiResponseParser()
 
 	var prompt string = `
-		Edit the code to solve the {{USER TASK}}. Use the json structure to write the code.
-		You should respond with an array of actions, where each action has a "type" field that is "edit_file" only.
-		Always try to edit the code rather than rewrite it.
+		Edit code to solve: {{USER TASK}}
+		Respond in JSON with edit_file actions only.
+		Edit existing code, don't rewrite.
 
-		Example response:
+		Example:
 		{
-			"actions": [
-				{
-					"type": "edit_file",
-					"path": "path/to/file",
-					"content": "file contents here",
-					"start_line": 1, // Required
-					"end_line": 10, // Required
-					"action": "replace" // or "insert" // Required
-				},
-				{
-					"type": "edit_file",
-					"path": "path/to/file",
-					"content": "file contents here",
-					"start_line": 13
-					"end_line": 21,
-					"action": "replace"
-				}
-			]
+			"actions": [{
+				"type": "edit_file",
+				"path": "file/path",
+				"content": "new code",
+				"start_line": 1,
+				"end_line": 5,
+				"action": "replace"
+			}]
 		}
 	`
 
-	prompt = prompt + "\n\n {{USER TASK}}=" + userTask + "\n\n EDIT THE CODE TO SOLVE THE {{USER TASK}}. Respond with JSON."
+	prompt = prompt + "\n\n {{USER TASK}}=" + userTask + "\n\n EDIT THE CODE TO SOLVE THE USER TASK. Respond with JSON."
 
 	// Use the new schema object
 	expectedFormat := codeEditor.NewEditRequestSchema()

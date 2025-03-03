@@ -60,7 +60,7 @@ func main() {
 
 	// Build complete prompt with base prompt, working directory, and user task
 	completePrompt := basePromptProvider.GetPrompt() + "\n\n" +
-		"THE CURRENT WORKING DIRECTORY IS: " + currentDir + "\n\n" +
+		"THE CURRENT WORKING DIRECTORY IS: " + currentDir + "\n\n Here is the directory structure, use it to learn about the codebase and open relevant files to solve the USER TASK. " +
 		treeText
 
 	var codeEditingService = codeEditor.NewCodeEditor()

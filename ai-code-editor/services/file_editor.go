@@ -47,8 +47,16 @@ func EditFile(path string, actions []codeEditor.EditFileAction) error {
 			continue // Skip invalid range
 		}
 
-		// Create new slice with replaced content
-		lines = append(lines[:startLine], append(newLines, lines[endLine+1:]...)...)
+		// Create a new slice with content before the replacement
+		prefix := lines[:startLine]
+		// Add the new content
+		prefix = append(prefix, newLines...)
+		// Add the content after the replacement
+		if endLine+1 < len(lines) {
+			prefix = append(prefix, lines[endLine+1:]...)
+		}
+		// Update the lines slice
+		lines = prefix
 	}
 
 	// Execute insert actions after

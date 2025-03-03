@@ -39,7 +39,7 @@ func main() {
 	}
 
 	model := os.Args[1]
-	userPrompt := os.Args[2]
+	userTask := os.Args[2]
 
 	fmt.Printf("Using model: %s\n", model)
 
@@ -58,13 +58,12 @@ func main() {
 	// Get the tree as a string
 	treeText := treeService.GetDirectoryString(currentDir)
 
-	prompt := userPrompt + "\n\n" + treeText
-
-	userPrompt = "\n\n USER TASK: |" + userPrompt + "|"
-
-	completePrompt := basePromptProvider.GetPrompt() + "\n\n" + "THE CURRENT WORKING DIRECTORY IS: " + currentDir + "\n\n" + prompt + userPrompt
+	// Build complete prompt with base prompt, working directory, and user task
+	completePrompt := basePromptProvider.GetPrompt() + "\n\n" +
+		"THE CURRENT WORKING DIRECTORY IS: " + currentDir + "\n\n" +
+		treeText
 
 	var codeEditingService = codeEditor.NewCodeEditor()
 
-	codeEditingService.EditCodeBase(ollamaClient, model, completePrompt)
+	codeEditingService.EditCodeBase(ollamaClient, model, completePrompt, userTask)
 }

@@ -17,22 +17,22 @@ func NewCodeEditor() *CodeEditor {
 	return &CodeEditor{}
 }
 
-func (c *CodeEditor) EditCodeBase(client *ollama.Client, model string, initalPrompt string) {
+func (c *CodeEditor) EditCodeBase(client *ollama.Client, model string, basePrompt string, userTask string) {
 
 	// Reading code
-	c.LearnFromFiles(client, model, initalPrompt)
+	c.LearnFromFiles(client, model, basePrompt, userTask)
 
-	c.EditCode(client, model)
+	c.EditCode(client, model, userTask)
 }
 
-func (c *CodeEditor) LearnFromFiles(client *ollama.Client, model string, initialPrompt string) {
+func (c *CodeEditor) LearnFromFiles(client *ollama.Client, model string, basePrompt string, userTask string) {
 	// Create a parser to parse the response
 	parser := NewAiResponseParser()
 
 	// Use the new schema object
 	expectedFormat := codeEditorSchemas.NewFileRequestSchema()
 
-	var initialReply string = c.SendMessage(client, model, expectedFormat, initialPrompt+"\n\n FIND CONTEXT")
+	var initialReply string = c.SendMessage(client, model, expectedFormat, basePrompt+"\n\n {{USER TASK}}="+userTask+"\n\n FIND CONTEXT. You should open files that are relevant to the USER TASK.")
 
 	log.Printf("Initial reply:\n %v", initialReply)
 
@@ -63,12 +63,12 @@ func (c *CodeEditor) LearnFromFiles(client *ollama.Client, model string, initial
 
 }
 
-func (c *CodeEditor) EditCode(client *ollama.Client, model string) {
+func (c *CodeEditor) EditCode(client *ollama.Client, model string, userTask string) {
 	// Create a parser to parse the response
 	parser := NewAiResponseParser()
 
 	var prompt string = `
-		Edit the code to solve the USER TASK. Use the json structure to write the code.
+		Edit the code to solve the {{USER TASK}}. Use the json structure to write the code.
 		You should respond with an array of actions, where each action has a "type" field that is "edit_file" only.
 		Always try to edit the code rather than rewrite it.
 
@@ -93,9 +93,9 @@ func (c *CodeEditor) EditCode(client *ollama.Client, model string) {
 				}
 			]
 		}
-
-		Respond using JSON.
 	`
+
+	prompt = prompt + "\n\n {{USER TASK}}=" + userTask + "\n\n EDIT THE CODE TO SOLVE THE {{USER TASK}}. Respond with JSON."
 
 	// Use the new schema object
 	expectedFormat := codeEditor.NewEditRequestSchema()

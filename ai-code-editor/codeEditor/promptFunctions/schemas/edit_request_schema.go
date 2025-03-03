@@ -1,4 +1,4 @@
-package codeEditor
+package schemas
 
 type EditRequestSchema struct {
 	Type       string `json:"type"`

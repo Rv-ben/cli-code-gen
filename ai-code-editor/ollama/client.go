@@ -18,12 +18,14 @@ type Client struct {
 	baseURL    string
 	httpClient *http.Client
 	history    []Message
+	stateless  bool // New field to control stateless behavior
 }
 
 type ChatRequest struct {
 	Model    string    `json:"model"`
 	Messages []Message `json:"messages"`
-	Format   any       `json:"any,omitempty"` // Change to any type to support object formats
+	Stream   bool      `json:"stream"`
+	Format   any       `json:"format"` // Change to any type to support object formats
 }
 
 type Message struct {
@@ -31,7 +33,7 @@ type Message struct {
 	Content string `json:"content"`
 }
 
-func NewClient(baseURL string) *Client {
+func NewClient(baseURL string, stateless bool) *Client {
 	if baseURL == "" {
 		baseURL = defaultOllamaEndpoint
 	}
@@ -41,11 +43,12 @@ func NewClient(baseURL string) *Client {
 		httpClient: &http.Client{
 			Timeout: time.Second * 300, // 5 minute timeout
 		},
-		history: make([]Message, 0),
+		history:   make([]Message, 0),
+		stateless: stateless,
 	}
 }
 
-func NewOllamaClient() *Client {
+func NewOllamaClient(stateless bool) *Client {
 	host := os.Getenv("OLLAMA_HOST")
 	if host == "" {
 		host = "localhost" // default value
@@ -62,6 +65,7 @@ func NewOllamaClient() *Client {
 		baseURL:    baseURL,
 		httpClient: &http.Client{},
 		history:    make([]Message, 0),
+		stateless:  stateless,
 	}
 }
 
@@ -71,13 +75,14 @@ func (r *ChatRequest) WithFormat(format any) *ChatRequest {
 }
 
 func (c *Client) AddMessage(role, content string) {
-	c.history = append(c.history, Message{
-		Role:    role,
-		Content: content,
-	})
-
-	// For debugging
-	log.Printf("Added message to history: %+v", c.history)
+	if !c.stateless {
+		c.history = append(c.history, Message{
+			Role:    role,
+			Content: content,
+		})
+		// For debugging
+		log.Printf("Added message to history: %+v", c.history)
+	}
 }
 
 func (c *Client) ClearHistory() {
@@ -113,21 +118,25 @@ func (c *Client) ChatCompletion(req interface{}) (string, error) {
 		}
 	}
 
-	// Combine history with new messages
-	if len(chatReq.Messages) > 0 {
+	// Combine history with new messages only if not stateless
+	if len(chatReq.Messages) > 0 && !c.stateless {
 		// Add the new message to history
 		c.AddMessage(chatReq.Messages[len(chatReq.Messages)-1].Role,
 			chatReq.Messages[len(chatReq.Messages)-1].Content)
 	}
 
-	// Use the full history for the request
-	chatReq.Messages = c.history
+	// Use the full history for the request only if not stateless
+	if !c.stateless {
+		chatReq.Messages = c.history
+	}
 
 	// Convert the request to JSON
 	jsonData, err := json.Marshal(chatReq)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal request: %w", err)
 	}
+
+	log.Printf("Request: %+v", chatReq.Messages)
 
 	request, err := http.NewRequest(
 		"POST",
@@ -155,9 +164,12 @@ func (c *Client) ChatCompletion(req interface{}) (string, error) {
 	var responseString string = ""
 
 	scanner := bufio.NewScanner(response.Body)
+	// Set a larger buffer size to handle longer responses
+	buf := make([]byte, 0, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
+
 	for scanner.Scan() {
-		var response map[string]interface {
-		}
+		var response map[string]interface{}
 
 		if err := json.Unmarshal(scanner.Bytes(), &response); err != nil {
 			return "", fmt.Errorf("error parsing response: %w", err)
@@ -173,8 +185,8 @@ func (c *Client) ChatCompletion(req interface{}) (string, error) {
 		return "", fmt.Errorf("error reading response: %w", err)
 	}
 
-	// After getting a successful response, add it to history
-	if responseString != "" {
+	// After getting a successful response, add it to history only if not stateless
+	if responseString != "" && !c.stateless {
 		c.AddMessage("assistant", responseString)
 	}
 

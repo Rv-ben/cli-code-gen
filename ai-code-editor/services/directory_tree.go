@@ -20,6 +20,7 @@ type DirectoryTree struct {
 	parser          *tree_sitter.Parser
 	tree            *tree_sitter.Tree
 	directoryString string
+	knownFiles      []string
 }
 
 // FileNode represents a file or directory in the tree
@@ -58,10 +59,11 @@ func NewDirectoryTree(indent string, maxDepth int, skipPaths []string) *Director
 	parser := tree_sitter.NewParser()
 
 	return &DirectoryTree{
-		indent:    indent,
-		maxDepth:  maxDepth,
-		skipPaths: skipPaths,
-		parser:    parser,
+		indent:     indent,
+		maxDepth:   maxDepth,
+		skipPaths:  skipPaths,
+		parser:     parser,
+		knownFiles: make([]string, 0),
 	}
 }
 
@@ -98,6 +100,7 @@ func (dt *DirectoryTree) Close() {
 		dt.parser.Close()
 		dt.parser = nil
 	}
+	dt.ClearKnownFiles()
 }
 
 func (dt *DirectoryTree) GetDirectoryString(rootPath string) string {
@@ -204,7 +207,6 @@ func (dt *DirectoryTree) GetFunctionDeclarations(node *tree_sitter.Node, fileCon
 
 // Add new method to build the directory structure
 func (dt *DirectoryTree) buildDirectoryStructure(path string, structure *DirectoryStructure) error {
-
 	info, err := os.Stat(path)
 	if err != nil {
 		return err
@@ -234,6 +236,10 @@ func (dt *DirectoryTree) buildDirectoryStructure(path string, structure *Directo
 			}
 		}
 	} else {
+		if !strings.HasPrefix(info.Name(), ".") {
+			dt.knownFiles = append(dt.knownFiles, path)
+		}
+
 		if strings.HasSuffix(path, ".go") {
 			signatures := dt.GetFunctionSignatures(path)
 			fileInfo := FileInfo{
@@ -269,4 +275,14 @@ func (dt *DirectoryTree) GetFunctionSignatures(filePath string) []string {
 
 	declarations := dt.GetFunctionDeclarations(tree.RootNode(), fileContents)
 	return strings.Split(strings.TrimSpace(declarations), "\n")
+}
+
+// Add this new method
+func (dt *DirectoryTree) GetKnownFiles() []string {
+	return dt.knownFiles
+}
+
+// Add this method to clear the known files list
+func (dt *DirectoryTree) ClearKnownFiles() {
+	dt.knownFiles = make([]string, 0)
 }

@@ -2,8 +2,7 @@ package codeEditor
 
 import (
 	codeEditorActions "ai-code-editor/codeEditor/actions"
-	codeEditor "ai-code-editor/codeEditor/schemas"
-	codeEditorSchemas "ai-code-editor/codeEditor/schemas"
+	codeEditorSchemas "ai-code-editor/codeEditor/promptFunctions/schemas"
 	"ai-code-editor/ollama"
 	"ai-code-editor/services"
 	"fmt"
@@ -88,7 +87,7 @@ func (c *CodeEditor) EditCode(client *ollama.Client, model string, userTask stri
 	prompt = prompt + "\n\n {{USER TASK}}=" + userTask + "\n\n EDIT THE CODE TO SOLVE THE USER TASK. Respond with JSON."
 
 	// Use the new schema object
-	expectedFormat := codeEditor.NewEditRequestSchema()
+	expectedFormat := codeEditorSchemas.NewEditRequestSchema()
 
 	var reply string = c.SendMessage(client, model, expectedFormat, prompt)
 

@@ -1,13 +1,13 @@
 package main
 
 import (
-	"ai-code-editor/codeEditor"
+	promptFunctions "ai-code-editor/codeEditor/promptFunctions"
 	"ai-code-editor/config"
-	"ai-code-editor/ollama"
 	"ai-code-editor/services"
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -20,9 +20,6 @@ func main() {
 	}
 
 	config := config.Load()
-	ollamaClient := ollama.NewClient(config.OllamaBaseURL)
-
-	basePromptProvider := services.NewBasePromptProvider()
 
 	// Get current directory
 	currentDir, err := os.Getwd()
@@ -32,38 +29,57 @@ func main() {
 	}
 
 	// Check for required arguments
-	if len(os.Args) < 3 {
-		fmt.Println("Usage: ollama-cli <model> <prompt> [files...]")
-		fmt.Println("Example: ollama-cli deepseek-r1:7b 'Fix the bug' file1.go file2.go")
+	if len(os.Args) < 1 {
+		fmt.Println("Usage: ollama-cli <prompt> [files...]")
+		fmt.Println("Example: ollama-cli 'Fix the bug' file1.go file2.go")
 		os.Exit(1)
 	}
 
-	model := os.Args[1]
-	userTask := os.Args[2]
+	userTask := os.Args[1]
 
-	fmt.Printf("Using model: %s\n", model)
+	selectedModel := config.MediumModel
 
-	// Generate directory tree
-	treeService := services.NewDirectoryTree(
-		"    ", // indent
-		10,     // maxDepth
-		[]string{ // skipPaths
-			"node_modules",
-			"vendor",
-			".git",
-		},
-	)
+	fmt.Printf("Using model: %s\n User task: %s\n", selectedModel, userTask)
 
-	defer treeService.Close() // Make sure to clean up resources
-	// Get the tree as a string
-	treeText := treeService.GetDirectoryString(currentDir)
+	codeBaseDescription := promptFunctions.NewCodeBaseDescription(currentDir, selectedModel, config)
+	description := codeBaseDescription.GetDescription()
 
-	// Build complete prompt with base prompt, working directory, and user task
-	completePrompt := basePromptProvider.GetPrompt() + "\n\n" +
-		"THE CURRENT WORKING DIRECTORY IS: " + currentDir + "\n\n Here is the directory structure, use it to learn about the codebase and open relevant files to solve the USER TASK. " +
-		treeText
+	fmt.Printf("Codebase description: %s\n", description)
 
-	var codeEditingService = codeEditor.NewCodeEditor()
+	gainProblemContext := promptFunctions.NewGainProblemContext(selectedModel, config, userTask, description)
+	requiredContext := gainProblemContext.GetRequiredContext()
 
-	codeEditingService.EditCodeBase(ollamaClient, model, completePrompt, userTask)
+	fmt.Printf("Required context: %s\n", requiredContext)
+
+	directoryTree := services.NewDirectoryTree(currentDir, 10, []string{})
+	availableFiles := directoryTree.GetKnownFiles()
+
+	determineFilesToRead := promptFunctions.NewDetermineFilesToRead(selectedModel, config, requiredContext, availableFiles)
+	selectedFiles := determineFilesToRead.GetFilesToRead()
+
+	fmt.Printf("Selected files: %v\n", selectedFiles)
+
+	planOfAction := promptFunctions.NewPlanOfAction(selectedModel, config, userTask, requiredContext+"\n"+strings.Join(selectedFiles, "\n"))
+	plan := planOfAction.GetPlan(userTask)
+
+	fmt.Printf("Plan of action: %s\n", plan)
+
+	editPlan := promptFunctions.NewEditPlan(selectedModel, config, plan)
+	editActions := editPlan.GetEditActions()
+
+	fmt.Printf("Edit actions: %v\n", editActions)
+
+	// Hard code the files to read for now to be the current directory/main.go use the os package
+	selectedFiles = []string{"main.go"}
+
+	readFiles := services.NewFileContextProvider(selectedFiles)
+
+	fileContext := readFiles.GetFileContents()
+
+	fmt.Printf("File context: %v\n", fileContext)
+
+	editFile := promptFunctions.NewEditFile(selectedModel, config, selectedFiles[0], fileContext, editActions)
+	edit := editFile.GetEdit(userTask)
+
+	fmt.Printf("Edit: %v\n", edit)
 }

@@ -1,4 +1,4 @@
-package codeEditor
+package schemas
 
 type FileRequestSchema struct {
 	Type       string `json:"type"`

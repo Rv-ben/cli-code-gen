@@ -279,6 +279,7 @@ func (dt *DirectoryTree) GetFunctionSignatures(filePath string) []string {
 
 // Add this new method
 func (dt *DirectoryTree) GetKnownFiles() []string {
+	log.Printf("Known files: %v", dt.knownFiles)
 	return dt.knownFiles
 }
 

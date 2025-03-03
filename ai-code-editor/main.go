@@ -37,7 +37,18 @@ func main() {
 
 	userTask := os.Args[1]
 
-	selectedModel := config.MediumModel
+	selectedModel := config.LargeModel
+
+	directoryTree := services.NewDirectoryTree("    ", 10, []string{})
+
+	// Generate tree first to populate known files
+	_, err = directoryTree.GenerateTree(currentDir)
+	if err != nil {
+		log.Printf("Error generating tree: %v", err)
+		return
+	}
+
+	availableFiles := directoryTree.GetKnownFiles()
 
 	fmt.Printf("Using model: %s\n User task: %s\n", selectedModel, userTask)
 
@@ -50,9 +61,6 @@ func main() {
 	requiredContext := gainProblemContext.GetRequiredContext()
 
 	fmt.Printf("Required context: %s\n", requiredContext)
-
-	directoryTree := services.NewDirectoryTree(currentDir, 10, []string{})
-	availableFiles := directoryTree.GetKnownFiles()
 
 	determineFilesToRead := promptFunctions.NewDetermineFilesToRead(selectedModel, config, requiredContext, availableFiles)
 	selectedFiles := determineFilesToRead.GetFilesToRead()
@@ -69,17 +77,16 @@ func main() {
 
 	fmt.Printf("Edit actions: %v\n", editActions)
 
-	// Hard code the files to read for now to be the current directory/main.go use the os package
-	selectedFiles = []string{"main.go"}
+	// selectedFiles = []string{"main.go"}
 
-	readFiles := services.NewFileContextProvider(selectedFiles)
+	// readFiles := services.NewFileContextProvider(selectedFiles)
 
-	fileContext := readFiles.GetFileContents()
+	// fileContext := readFiles.GetFileContents()
 
-	fmt.Printf("File context: %v\n", fileContext)
+	// fmt.Printf("File context: %v\n", fileContext)
 
-	editFile := promptFunctions.NewEditFile(selectedModel, config, selectedFiles[0], fileContext, editActions)
-	edit := editFile.GetEdit(userTask)
+	// editFile := promptFunctions.NewEditFile(selectedModel, config, selectedFiles[0], fileContext, editActions)
+	// edit := editFile.GetEdit(userTask)
 
-	fmt.Printf("Edit: %v\n", edit)
+	// fmt.Printf("Edit: %v\n", edit)
 }

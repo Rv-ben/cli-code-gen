@@ -34,14 +34,20 @@ Make the following edit:
 Additional constraints:
 %s
 
-Provide the edit in a code block with the file path like so:
-'''language:path/to/file
-// ... existing code ...
-edited code here
-// ... existing code ...
-'''
+Provide multiple edit file action with:
+- The full file path
+- The content to be inserted or replaced
+- The line numbers where the edit occurs (start and end)
+- The edit type (replace, insert, delete)
 
-Keep the edit minimal and focused. Preserve existing code structure and style.
+Format the response as a JSON array of objects with fields:
+- filePath: string
+- content: string
+- startLine: int
+- endLine: int
+- editType: string (replace, insert, delete)
+
+Keep the code changes focused.
 `, e.SourceFile, e.FileContent, editRequest, e.Constraints)
 
 	response, err := e.ExecutePrompt(prompt)

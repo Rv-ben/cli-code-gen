@@ -31,12 +31,12 @@ Given this plan of action:
 
 Parse out each file that needs to be edited. For each file provide:
 1. The full file path
-2. A description of what changes need to be made
-3. Any constraints or considerations for the edit
+2. A general description of what changes need to be made to the file
+3. Any constraints for the edit so the edit works well with other files and the overall plan, such as "There needs to be a function called train with a string argument called model_name"
 
 Format the response as a JSON array of objects with fields:
 - filePath: string
-- description: string  
+- description: string
 - constraints: string
 
 Only include files that will be edited. Be specific about the changes needed.

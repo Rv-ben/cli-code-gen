@@ -29,18 +29,22 @@ func (e *EditPlan) GetEditActions() string {
 Given this plan of action:
 %s
 
-Parse out each file that needs to be edited. For each file provide:
+Parse out each file that needs to be edited, created, or deleted. For each file provide:
 1. The full file path
 2. A general description of what changes need to be made to the file
 3. Any constraints for the edit so the edit works well with other files and the overall plan, such as "There needs to be a function called train with a string argument called model_name"
+4. Any additional files that need to be read to understand the context of the edit
+5. The general edit plan for all files
 
 Format the response as a JSON array of objects with fields:
 - filePath: string
 - description: string
 - constraints: string
-
+- additionalFilesForContext: string[]
+- generalPlan: string
 Only include files that will be edited. Be specific about the changes needed.
 
+Do not include references to your reasoning or any other explanation in the formatted response.
 Do not include any explanation or additional text, just the JSON array.
 `, e.Plan)
 

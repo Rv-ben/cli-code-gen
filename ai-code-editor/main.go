@@ -52,22 +52,22 @@ func main() {
 
 	fmt.Printf("Using model: %s\n User task: %s\n", selectedModel, userTask)
 
-	codeBaseDescription := promptFunctions.NewCodeBaseDescription(currentDir, selectedModel, config)
+	codeBaseDescription := promptFunctions.NewCodeBaseDescription(config.SmallModel, selectedModel, config)
 	description := codeBaseDescription.GetDescription()
 
 	fmt.Printf("Codebase description: %s\n", description)
 
-	gainProblemContext := promptFunctions.NewGainProblemContext(selectedModel, config, userTask, description)
+	gainProblemContext := promptFunctions.NewGainProblemContext(config.SmallModel, config, userTask, description)
 	requiredContext := gainProblemContext.GetRequiredContext()
 
 	fmt.Printf("Required context: %s\n", requiredContext)
 
-	determineFilesToRead := promptFunctions.NewDetermineFilesToRead(selectedModel, config, requiredContext, availableFiles)
+	determineFilesToRead := promptFunctions.NewDetermineFilesToRead(config.SmallModel, config, requiredContext, availableFiles)
 	selectedFiles := determineFilesToRead.GetFilesToRead()
 
 	fmt.Printf("Selected files: %v\n", selectedFiles)
 
-	planOfAction := promptFunctions.NewPlanOfAction(selectedModel, config, userTask, requiredContext+"\n"+strings.Join(selectedFiles, "\n"))
+	planOfAction := promptFunctions.NewPlanOfAction(config.SmallModel, config, userTask, requiredContext+"\n"+strings.Join(selectedFiles, "\n"))
 	plan := planOfAction.GetPlan(userTask)
 
 	fmt.Printf("Plan of action: %s\n", plan)

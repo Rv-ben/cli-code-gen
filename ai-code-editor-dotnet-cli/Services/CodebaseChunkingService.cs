@@ -1,4 +1,5 @@
 using System.Text;
+using Qdrant.Client.Grpc;
 
 namespace AiCodeEditor.Cli.Services
 {
@@ -22,6 +23,18 @@ namespace AiCodeEditor.Cli.Services
             int EndLine,
             string Language
         );
+
+        public static Google.Protobuf.Collections.MapField<string, Value> ToFieldMap(CodeChunk chunk)
+        {
+            return new Google.Protobuf.Collections.MapField<string, Value>
+            {
+                { "file_path", chunk.FilePath },
+                { "start_line", chunk.StartLine.ToString() },
+                { "end_line", chunk.EndLine.ToString() },
+                { "language", chunk.Language },
+                { "content", chunk.Content }
+            };
+        }
 
         public async Task<List<CodeChunk>> ChunkCodebaseAsync(string rootPath)
         {

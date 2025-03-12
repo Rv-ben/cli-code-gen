@@ -44,19 +44,18 @@ namespace AiCodeEditor.Cli.Services
 
             foreach (var file in files)
             {
-                var relativePath = Path.GetRelativePath(rootPath, file);
-                if (ShouldSkipFile(relativePath))
+                if (ShouldSkipFile(file))
                     continue;
 
                 var fileContent = await File.ReadAllTextAsync(file);
                 var language = GetLanguageFromExtension(Path.GetExtension(file));
-                chunks.AddRange(ChunkFile(fileContent, relativePath, language));
+                chunks.AddRange(ChunkFile(fileContent, file, language));
             }
 
             return chunks;
         }
 
-        private bool ShouldSkipFile(string relativePath)
+        private bool ShouldSkipFile(string filePath)
         {
             var skipPatterns = new[]
             {
@@ -70,7 +69,7 @@ namespace AiCodeEditor.Cli.Services
             };
 
             return skipPatterns.Any(pattern => 
-                relativePath.Contains(pattern, StringComparison.OrdinalIgnoreCase));
+                filePath.Contains(pattern, StringComparison.OrdinalIgnoreCase));
         }
 
         private List<CodeChunk> ChunkFile(string content, string filePath, string language)

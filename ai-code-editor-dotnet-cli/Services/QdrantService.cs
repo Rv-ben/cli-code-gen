@@ -7,7 +7,7 @@ namespace AiCodeEditor.Cli.Services
     {
         private readonly QdrantClient _client;
         private readonly string _collectionName;
-        private const int VectorSize = 4096; // Default size for Ollama embeddings
+        private const int VectorSize = 768; // Default size for Ollama embeddings
 
         public QdrantService(string collectionName = "code_chunks", string host = "localhost", int port = 6334)
         {
@@ -25,6 +25,7 @@ namespace AiCodeEditor.Cli.Services
                 }
                 catch (Grpc.Core.RpcException)
                 {
+                    Console.WriteLine("Collection doesn't exist, creating it...");
                     // Collection doesn't exist, create it
                     await _client.CreateCollectionAsync(
                         _collectionName,

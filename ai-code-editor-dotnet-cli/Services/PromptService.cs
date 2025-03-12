@@ -4,8 +4,7 @@ namespace AiCodeEditor.Cli.Services
 {
     public class PromptService
     {
-        private readonly SemanticKernelService _kernel;
-        private readonly Dictionary<string, PromptTemplate> _templates;
+        private readonly SemanticKernelService _kernelService;
 
         public record PromptTemplate
         {
@@ -14,14 +13,9 @@ namespace AiCodeEditor.Cli.Services
             public required string Template { get; init; }
         }
 
-        public PromptService(string? apiKey = null, string? modelId = null, bool useOllama = true, string? ollamaEndpoint = null)
+        public PromptService(SemanticKernelService kernelService)
         {
-            _kernel = new SemanticKernelService(
-                apiKey ?? string.Empty,
-                modelId ?? "llama2",
-                useOllama,
-                ollamaEndpoint
-            );
+            _kernelService = kernelService;
         }
 
         public async Task<string> SearchContextualizedQueryAsync(string searchQuery, string codeContext)
@@ -37,7 +31,7 @@ namespace AiCodeEditor.Cli.Services
                 Generate a detailed search query that will find the most relevant code based on this context.
                 Return only the search query without explanation.
             ";
-            return await _kernel.AskAsync(prompt);
+            return await _kernelService.AskAsync(prompt);
         }
 
         public async Task<string> GetRefactoringPlanAsync(string code, string language)
@@ -53,7 +47,7 @@ namespace AiCodeEditor.Cli.Services
                 3. Maintain functionality while improving code quality
                 4. List steps in order of priority
             ";
-            return await _kernel.AskAsync(prompt);
+            return await _kernelService.AskAsync(prompt);
         }
 
         public async Task<string> GetCodeExplanationAsync(string code, string language)
@@ -63,7 +57,7 @@ namespace AiCodeEditor.Cli.Services
 
                 {code}
             ";
-            return await _kernel.AskAsync(prompt);
+            return await _kernelService.AskAsync(prompt);
         }
         
     }

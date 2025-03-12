@@ -1,4 +1,5 @@
 using AiCodeEditor.Cli.Services;
+using AiCodeEditor.Cli.Models;
 using CliFx;
 using CliFx.Attributes;
 using CliFx.Infrastructure;
@@ -8,48 +9,42 @@ namespace AiCodeEditor.Cli.Commands
     [Command("search", Description = "Create a vector database from current codebase and search it")]
     public class SearchCodeCommand : ICommand
     {
+        private readonly CodebaseChunkingService _chunkingService;
+        private readonly OllamaEmbeddingService _embeddingService;
+        private readonly QdrantService _qdrantService;
+        private readonly CodeSearchService _searchService;
+        private readonly AppConfig _config;
         [CommandOption("query", 'q', Description = "Search query")]
         public required string Query { get; init; }
-
-        [CommandOption("chunk-size", 's', Description = "Maximum size of each chunk in characters")]
-        public int ChunkSize { get; init; } = 2048;
 
         [CommandOption("limit", 'l', Description = "Maximum number of results to return")]
         public int Limit { get; init; } = 5;
 
-        [CommandOption("threshold", 't', Description = "Minimum similarity score (0-1)")]
-        public float Threshold { get; init; } = 0.3f;
-
-        [CommandOption("ollama-endpoint", Description = "Ollama API endpoint")]
-        public string OllamaEndpoint { get; init; } = "http://localhost:11434";
-
-        [CommandOption("ollama-model", Description = "Ollama model to use")]
-        public string OllamaModel { get; init; } = "nomic-embed-text:latest";
-
-        [CommandOption("qdrant-host", Description = "Qdrant host")]
-        public string QdrantHost { get; init; } = "localhost";
-
-        [CommandOption("qdrant-port", Description = "Qdrant port")]
-        public int QdrantPort { get; init; } = 6334;
+        public SearchCodeCommand(
+            CodebaseChunkingService chunkingService,
+            OllamaEmbeddingService embeddingService,
+            QdrantService qdrantService,
+            CodeSearchService searchService,
+            AppConfig config)
+        {
+            _chunkingService = chunkingService;
+            _embeddingService = embeddingService;
+            _qdrantService = qdrantService;
+            _searchService = searchService;
+            _config = config;
+        }
 
         public async ValueTask ExecuteAsync(IConsole console)
         {
             try
             {
-                // Create services with a unique collection name
-                string collectionName = Guid.NewGuid().ToString("N");
-                var chunkingService = new CodebaseChunkingService(ChunkSize);
-                var embeddingService = new OllamaEmbeddingService(OllamaEndpoint, OllamaModel);
-                var qdrantService = new QdrantService(collectionName, QdrantHost, QdrantPort);
-                var searchService = new CodeSearchService(embeddingService, qdrantService);
-
                 // Initialize collection
-                console.Output.WriteLine($"Initializing collection '{collectionName}'...");
-                await qdrantService.InitializeCollectionAsync();
+                console.Output.WriteLine($"Initializing collection...");
+                await _qdrantService.InitializeCollectionAsync();
 
                 // Chunk the codebase
                 console.Output.WriteLine("Chunking codebase...");
-                var chunks = await chunkingService.ChunkCodebaseAsync(Directory.GetCurrentDirectory());
+                var chunks = await _chunkingService.ChunkCodebaseAsync(Directory.GetCurrentDirectory());
                 console.Output.WriteLine($"Found {chunks.Count} chunks");
 
                 // Store chunks with embeddings
@@ -57,7 +52,7 @@ namespace AiCodeEditor.Cli.Commands
                 for (int i = 1; i < chunks.Count + 1; i++)
                 {
                     var chunk = chunks[i - 1];
-                    var embedding = await embeddingService.GetEmbeddingAsync(chunk.Content);
+                    var embedding = await _embeddingService.GetEmbeddingAsync(chunk.Content);
                     var payload = new Dictionary<string, string>
                     {
                         { "file_path", chunk.FilePath },
@@ -67,7 +62,7 @@ namespace AiCodeEditor.Cli.Commands
                         { "content", chunk.Content }
                     };
 
-                    await qdrantService.UpsertVectorAsync((ulong)i, embedding, payload);
+                    await _qdrantService.UpsertVectorAsync((ulong)i, embedding, payload);
                     
                     if (i % 10 == 0) // Progress indicator
                     {
@@ -78,7 +73,7 @@ namespace AiCodeEditor.Cli.Commands
 
                 // Search
                 console.Output.WriteLine($"\nSearching for: {Query}");
-                var results = await searchService.SearchGroupedByFileAsync(Query, Limit, Threshold);
+                var results = await _searchService.SearchGroupedByFileAsync(Query, Limit, _config.SearchThreshold);
 
                 // Display results
                 if (!results.Any())

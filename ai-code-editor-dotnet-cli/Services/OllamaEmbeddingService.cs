@@ -1,19 +1,20 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using AiCodeEditor.Cli.Models;
 
 namespace AiCodeEditor.Cli.Services
 {
     public class OllamaEmbeddingService
     {
         private readonly HttpClient _httpClient;
-        private readonly string _baseUrl;
-        private readonly string _modelName;
+        private readonly string _host;
+        private readonly string _model;
 
-        public OllamaEmbeddingService(string baseUrl = "http://localhost:11434", string modelName = "llama2")
+        public OllamaEmbeddingService(AppConfig config)
         {
             _httpClient = new HttpClient();
-            _baseUrl = baseUrl.TrimEnd('/');
-            _modelName = modelName;
+            _host = config.OllamaHost;
+            _model = config.EmbeddingModel;
         }
 
         public record EmbeddingRequest(string Model, string Prompt);
@@ -26,9 +27,9 @@ namespace AiCodeEditor.Cli.Services
 
         public async Task<float[]> GetEmbeddingAsync(string text)
         {
-            var request = new EmbeddingRequest(_modelName, text);
+            var request = new EmbeddingRequest(_model, text);
             var response = await _httpClient.PostAsync(
-                $"{_baseUrl}/api/embeddings",
+                $"{_host}/api/embeddings",
                 new StringContent(JsonSerializer.Serialize(request))
             );
 

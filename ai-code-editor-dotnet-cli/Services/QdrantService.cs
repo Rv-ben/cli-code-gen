@@ -1,5 +1,6 @@
 using Qdrant.Client;
 using Qdrant.Client.Grpc;
+using AiCodeEditor.Cli.Models;
 
 namespace AiCodeEditor.Cli.Services
 {
@@ -8,11 +9,13 @@ namespace AiCodeEditor.Cli.Services
         private readonly QdrantClient _client;
         private readonly string _collectionName;
         private const int VectorSize = 768; // Default size for Ollama embeddings
+        private readonly string _host;
 
-        public QdrantService(string collectionName = "code_chunks", string host = "localhost", int port = 6334)
+        public QdrantService(AppConfig config)
         {
-            _client = new QdrantClient(host, port);
-            _collectionName = collectionName;
+            _host = config.QdrantHost;
+            _collectionName = config.QdrantCollection;
+            _client = new QdrantClient(config.QdrantHost, config.QdrantPort);
         }
 
         public async Task InitializeCollectionAsync()

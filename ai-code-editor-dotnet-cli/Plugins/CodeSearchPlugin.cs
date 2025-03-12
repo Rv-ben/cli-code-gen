@@ -1,20 +1,24 @@
 using AiCodeEditor.Cli.Services;
 using Microsoft.SemanticKernel;
 using System.ComponentModel;
+using AiCodeEditor.Cli.Models;
 
 namespace AiCodeEditor.Cli.Plugins
 {
     public class CodeSearchPlugin
     {
         private readonly CodeSearchService _searchService;
-        private readonly int _maxResults = 2;
-        private readonly float _threshold = 0.3f;
+        private readonly int _maxResults;
+        private readonly float _threshold;
 
         public CodeSearchPlugin(
             OllamaEmbeddingService embeddingService,
-            QdrantService qdrantService)
+            QdrantService qdrantService,
+            AppConfig config)
         {
             _searchService = new CodeSearchService(embeddingService, qdrantService);
+            _maxResults = config.MaxSearchResults;
+            _threshold = config.SearchThreshold;
         }
 
         [KernelFunction, Description("Search code in the codebase")]

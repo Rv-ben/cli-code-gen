@@ -1,5 +1,6 @@
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
+using AiCodeEditor.Cli.Models;
 using Microsoft.SemanticKernel.Connectors.Ollama;
 
 namespace AiCodeEditor.Cli.Services
@@ -8,54 +9,58 @@ namespace AiCodeEditor.Cli.Services
     {
         private readonly Kernel _kernel;
 
-        public SemanticKernelService(string apiKey, string modelId = "llama2", bool useOllama = false, string? ollamaEndpoint = null)
+        private readonly OllamaPromptExecutionSettings _ollamaSettings;
+
+        public SemanticKernelService(AppConfig config)
         {
             var builder = Kernel.CreateBuilder();
-            
-            if (useOllama)
-            {
-                // Default Ollama endpoint if not specified
-                ollamaEndpoint ??= "http://localhost:11434";
 
-#pragma warning disable SKEXP0070 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+            if (config.UseOllama)
+            {
                 builder.AddOllamaChatCompletion(
-                    modelId: modelId,
-                    endpoint: new Uri(ollamaEndpoint)
+                    serviceId: "ollama",
+                    modelId: config.OllamaModel, 
+                    endpoint: new Uri(config.OllamaHost)
                 );
-#pragma warning restore SKEXP0070 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+
+                _ollamaSettings = new OllamaPromptExecutionSettings {
+                    NumPredict = 100
+                };
+            }
+            else if (!string.IsNullOrEmpty(config.OpenAIKey))
+            {
+                builder.AddOpenAIChatCompletion(
+                    modelId: config.OpenAIModel,
+                    apiKey: config.OpenAIKey
+                );
             }
             else
             {
-                builder.AddOpenAIChatCompletion(
-                    modelId: modelId,
-                    apiKey: apiKey
-                );
+                throw new ArgumentException("Either UseOllama must be true or OpenAIKey must be provided");
             }
-            
+
             _kernel = builder.Build();
         }
 
         public async Task<string> AskAsync(string prompt)
         {
-            var function = _kernel.CreateFunctionFromPrompt(
-                prompt,
-                new PromptExecutionSettings { }
-            );
+            try
+            {
+                Console.WriteLine(_ollamaSettings.ToString());
+                var promptFunction = _kernel.CreateFunctionFromPrompt(prompt, _ollamaSettings);
 
-            var result = await _kernel.InvokeAsync(function);
-            return result.GetValue<string>() ?? "No response generated.";
-        }
+                var args = new KernelArguments
+                {
+                    { "ollama", _ollamaSettings }
+                };
 
-        public async Task<string> GenerateCodeAsync(string prompt)
-        {
-            var function = _kernel.CreateFunctionFromPrompt(
-                $"Generate code based on this request: {prompt}\n" +
-                "Provide only the code without explanations unless specifically asked for comments.",
-                new PromptExecutionSettings {  }
-            );
-
-            var result = await _kernel.InvokeAsync(function);
-            return result.GetValue<string>() ?? "No code generated.";
+                var result = await _kernel.InvokeAsync(promptFunction, args);
+                return result.GetValue<string>() ?? string.Empty;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Failed to get response from LLM: {ex.Message}", ex);
+            }
         }
     }
 } 

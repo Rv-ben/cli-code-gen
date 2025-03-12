@@ -16,14 +16,27 @@ namespace AiCodeEditor.Cli.Commands
         private readonly PromptService _promptService;
         private readonly CodeSearchPlugin _codeSearchPlugin;
 
-        public ExplainCodebaseCommand(PromptService promptService, CodeSearchPlugin codeSearchPlugin)
+        private readonly CodebaseIndexingService _codebaseIndexingService;
+
+        public ExplainCodebaseCommand(PromptService promptService, CodeSearchPlugin codeSearchPlugin, CodebaseIndexingService codebaseIndexingService)
         {
             _promptService = promptService;
             _codeSearchPlugin = codeSearchPlugin;
+            _codebaseIndexingService = codebaseIndexingService;
         }
 
         public async ValueTask ExecuteAsync(IConsole console)
         {
+
+            await _codebaseIndexingService.IndexCodebaseAsync(
+                Directory.GetCurrentDirectory(),
+                (message, isNewLine) => 
+                {
+                    console.Output.Write(message);
+                    if (isNewLine) console.Output.WriteLine();
+                }
+            );
+
             // If query is provided, search for specific code first
             string relevantCode = "";
             if (!string.IsNullOrEmpty(Query))
@@ -36,22 +49,9 @@ namespace AiCodeEditor.Cli.Commands
                 }
             }
 
-            // Construct the prompt based on whether we have a specific query or not
-            string prompt;
-            if (string.IsNullOrEmpty(Query))
-            {
-                prompt = "Please analyze this code and provide a clear, high-level explanation of its purpose, " +
-                        "main components, and how they work together. Focus on the key functionality and architecture.";
-            }
-            else
-            {
-                prompt = $"Please explain the following code, focusing on {Query}. " +
-                        "Provide a clear explanation of how it works and its purpose in the codebase.";
-            }
-
             try
             {
-                var explanation = await _promptService.GetCodeExplanationAsync(prompt, relevantCode);
+                var explanation = await _promptService.GetCodeExplanationAsync(relevantCode, "C#");
                 await console.Output.WriteLineAsync(explanation);
             }
             catch (Exception ex)

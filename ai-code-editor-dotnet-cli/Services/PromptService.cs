@@ -53,12 +53,30 @@ namespace AiCodeEditor.Cli.Services
         public async Task<string> GetCodeExplanationAsync(string code, string language)
         {
             var prompt = @$"
-                You are a senior software developer. Explain this {language} code concisely:
+                You are a senior software developer.
+                Keep the answer under 100 words.
+                Explain this {language} code concisely:
 
                 {code}
             ";
             return await _kernelService.AskAsync(prompt);
         }
         
+        public async Task<string> FindBugAsync(string code, string additionalContext)
+        {
+            var prompt = @$"
+                You are a senior software developer. 
+                You are given a code and some additional context.
+                Find the bug in the code. Keep the answer under 100 words.
+
+                Code:
+                {code}
+
+                Additional Context:
+                {additionalContext}
+            ";
+
+            return await _kernelService.AskAsync(prompt);
+        }
     }
 } 

@@ -18,12 +18,16 @@ namespace AiCodeEditor.Cli
             var config = new AppConfig
             {
                 OllamaHost = "http://localhost:11434",
-                OllamaModel = "llama2",
+                OllamaModel = "qwen2.5:3b",
+                EmbeddingModel = "nomic-embed-text:latest",
                 QdrantHost = "localhost",
                 QdrantPort = 6334,
                 QdrantCollection = Guid.NewGuid().ToString("N"),
                 SearchThreshold = 0.3f,
-                MaxSearchResults = 2
+                MaxSearchResults = 2,
+                UseOllama = true,
+                OpenAIKey = null,
+                OpenAIModel = "gpt-4-turbo-preview"
             };
             services.AddSingleton(config);
 
@@ -34,9 +38,12 @@ namespace AiCodeEditor.Cli
             services.AddSingleton<CodeSearchPlugin>();
             services.AddSingleton<PromptService>();
             services.AddSingleton<CodeSearchService>();
+            services.AddSingleton<CodebaseIndexingService>();
             
             // Register commands and their dependencies
             services.AddTransient<SearchCodeCommand>();
+            services.AddTransient<ExplainCodebaseCommand>();
+            services.AddTransient<FindBugCommand>();
             services.AddTransient<CodebaseChunkingService>();
 
             var serviceProvider = services.BuildServiceProvider();

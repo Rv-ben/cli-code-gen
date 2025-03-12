@@ -1,3 +1,5 @@
 ai-code-editor/ai-code-editor
 .DS_Store
 .env
+**/bin/**
+**/obj/**

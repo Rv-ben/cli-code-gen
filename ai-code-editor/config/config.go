@@ -8,6 +8,8 @@ type Config struct {
 	SmallModel    string
 	MediumModel   string
 	LargeModel    string
+	ChromaURL     string
+	EmbedModel    string
 }
 
 func Load() *Config {
@@ -25,11 +27,23 @@ func Load() *Config {
 	mediumModel := os.Getenv("MEDIUM_MODEL")
 	largeModel := os.Getenv("LARGE_MODEL")
 
+	chromaURL := os.Getenv("CHROMA_URL")
+	if chromaURL == "" {
+		chromaURL = "http://localhost:8000"
+	}
+
+	embedModel := os.Getenv("EMBED_MODEL")
+	if embedModel == "" {
+		embedModel = "nomic-embed-text"
+	}
+
 	return &Config{
 		Port:          port,
 		OllamaBaseURL: ollamaURL,
 		SmallModel:    smallModel,
 		MediumModel:   mediumModel,
 		LargeModel:    largeModel,
+		ChromaURL:     chromaURL,
+		EmbedModel:    embedModel,
 	}
 }

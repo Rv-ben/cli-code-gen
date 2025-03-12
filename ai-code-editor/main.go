@@ -1,13 +1,11 @@
 package main
 
 import (
-	promptFunctions "ai-code-editor/codeEditor/promptFunctions"
 	"ai-code-editor/config"
 	"ai-code-editor/services"
 	"fmt"
 	"log"
 	"os"
-	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -39,6 +37,22 @@ func main() {
 
 	selectedModel := config.LargeModel
 
+	// Initialize the code embedding service
+	codeEmbeddingService, err := services.NewCodeEmbeddingService(config, "code_embeddings")
+	if err != nil {
+		log.Fatalf("Failed to create code embedding service: %v", err)
+	}
+
+	// Initialize the semantic file context provider
+	semanticContextProvider := services.NewSemanticFileContextProvider(codeEmbeddingService, currentDir)
+
+	// Index the current directory
+	fmt.Println("Indexing code files...")
+	err = semanticContextProvider.IndexDirectory(currentDir, []string{".go"})
+	if err != nil {
+		log.Printf("Warning: Error indexing directory: %v", err)
+	}
+
 	directoryTree := services.NewDirectoryTree("    ", 10, []string{})
 
 	// Generate tree first to populate known files
@@ -48,45 +62,36 @@ func main() {
 		return
 	}
 
-	availableFiles := directoryTree.GetKnownFiles()
-
 	fmt.Printf("Using model: %s\n User task: %s\n", selectedModel, userTask)
 
-	codeBaseDescription := promptFunctions.NewCodeBaseDescription(config.SmallModel, selectedModel, config)
-	description := codeBaseDescription.GetDescription()
+	// Use semantic search to find relevant files
+	relevantFiles, err := semanticContextProvider.GetRelevantFiles(userTask, 5)
 
-	fmt.Printf("Codebase description: %s\n", description)
+	// Get relevant context
+	relevantContext, err := semanticContextProvider.GetRelevantContext(userTask, 10)
 
-	gainProblemContext := promptFunctions.NewGainProblemContext(config.SmallModel, config, userTask, description)
-	requiredContext := gainProblemContext.GetRequiredContext()
+	fmt.Printf("Relevant context: %v\n", relevantContext)
+	fmt.Printf("Relevant files: %v\n", relevantFiles)
+}
 
-	fmt.Printf("Required context: %s\n", requiredContext)
+// Helper function to merge file lists without duplicates
+func mergeFileLists(list1, list2 []string) []string {
+	uniqueFiles := make(map[string]bool)
 
-	determineFilesToRead := promptFunctions.NewDetermineFilesToRead(config.SmallModel, config, requiredContext, availableFiles)
-	selectedFiles := determineFilesToRead.GetFilesToRead()
+	// Add all files from both lists to the map
+	for _, file := range list1 {
+		uniqueFiles[file] = true
+	}
 
-	fmt.Printf("Selected files: %v\n", selectedFiles)
+	for _, file := range list2 {
+		uniqueFiles[file] = true
+	}
 
-	planOfAction := promptFunctions.NewPlanOfAction(config.SmallModel, config, userTask, requiredContext+"\n"+strings.Join(selectedFiles, "\n"))
-	plan := planOfAction.GetPlan(userTask)
+	// Convert map keys to slice
+	result := make([]string, 0, len(uniqueFiles))
+	for file := range uniqueFiles {
+		result = append(result, file)
+	}
 
-	fmt.Printf("Plan of action: %s\n", plan)
-
-	editPlan := promptFunctions.NewEditPlan(selectedModel, config, plan)
-	editActions := editPlan.GetEditActions()
-
-	fmt.Printf("Edit actions: %v\n", editActions)
-
-	// selectedFiles = []string{"main.go"}
-
-	// readFiles := services.NewFileContextProvider(selectedFiles)
-
-	// fileContext := readFiles.GetFileContents()
-
-	// fmt.Printf("File context: %v\n", fileContext)
-
-	// editFile := promptFunctions.NewEditFile(selectedModel, config, selectedFiles[0], fileContext, editActions)
-	// edit := editFile.GetEdit(userTask)
-
-	// fmt.Printf("Edit: %v\n", edit)
+	return result
 }

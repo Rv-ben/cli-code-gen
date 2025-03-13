@@ -25,7 +25,14 @@ namespace AiCodeEditor.Cli.Plugins
         public async Task<string> SearchCode(
             [Description("The search query to find relevant code")] string query)
         {
+            Console.WriteLine($"\nSearching for: {query}");
             var results = await _searchService.SearchAsync(query, _maxResults, _threshold);
+            
+            Console.WriteLine($"Found {results.Count} results");
+            foreach (var result in results)
+            {
+                Console.WriteLine($"Match: {result.FilePath} (Score: {result.Score:F2})");
+            }
             
             if (!results.Any())
             {

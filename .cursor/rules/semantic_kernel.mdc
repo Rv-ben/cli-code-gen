@@ -1,0 +1,128 @@
+---
+description: Helps give cursor context of Semantic Kernal
+globs: 
+alwaysApply: false
+---
+# Semantic Kernel Expertise
+
+## Overview
+Semantic Kernel (SK) is a powerful SDK that integrates Large Language Models (LLMs) with conventional programming languages. It provides a sophisticated framework for AI orchestration and development.
+
+## Key Capabilities
+- Integration with major LLM providers (OpenAI, Azure OpenAI, Hugging Face)
+- Support for multiple programming languages (C#, Python, Java)
+- Plugin architecture for extensible AI functionality
+- AI planning and orchestration capabilities
+- Memory and embedding management
+- Prompt template management
+
+## Core Concepts
+
+### Kernel
+The central orchestrator that manages:
+- AI service connections
+- Memory storage
+- Plugin loading and execution
+- Planning capabilities
+
+### Plugins
+- Native functions (written in C#/Python/Java)
+- Semantic functions (prompt-based)
+- OpenAPI-based functions
+- Support for both synchronous and asynchronous operations
+
+### Planners
+- Sequential planner
+- Action planner
+- Hierarchical planner
+- Custom planner implementations
+
+### Memory
+- Supports various vector databases (Chroma, Qdrant, Milvus, Azure)
+- Embedding generation and storage
+- Semantic search capabilities
+- Memory collection management
+
+## Implementation Guidelines
+
+### Best Practices
+1. Always initialize the kernel with proper configuration
+2. Use dependency injection when available
+3. Implement error handling for AI operations
+4. Follow async patterns for non-blocking operations
+5. Properly manage API keys and secrets
+
+### Code Structure
+```csharp
+// Basic kernel setup
+var kernel = Kernel.Builder
+    .WithOpenAITextCompletionService(apiKey, modelId)
+    .WithMemoryStorage(memoryStore)
+    .Build();
+
+// Plugin registration
+kernel.ImportSkill(new CustomPlugin());
+
+// Function execution
+var result = await kernel.RunAsync(input, functionName);
+```
+
+### Memory Operations
+```python
+# Memory storage
+await kernel.memory.SaveInformationAsync(
+    collection="collection_name",
+    text="information to store",
+    id="unique_id"
+)
+
+# Memory retrieval
+results = await kernel.memory.SearchAsync(
+    collection="collection_name",
+    query="search query",
+    limit=5
+)
+```
+
+## Integration Patterns
+
+### With Web APIs
+- Use OpenAPI plugins for REST integration
+- Implement authentication handlers
+- Handle rate limiting and retries
+
+### With Databases
+- Configure vector stores for embeddings
+- Implement proper connection management
+- Use appropriate indexing strategies
+
+### With Enterprise Systems
+- Implement security best practices
+- Use telemetry and logging
+- Support responsible AI practices
+
+## Troubleshooting
+
+### Common Issues
+1. API authentication errors
+2. Memory storage configuration
+3. Plugin loading failures
+4. Planner execution errors
+
+### Debug Strategies
+1. Enable detailed logging
+2. Use step-by-step execution
+3. Validate configurations
+4. Check API quotas and limits
+
+## Resources
+- Official Documentation: https://learn.microsoft.com/semantic-kernel
+- GitHub Repository: https://github.com/microsoft/semantic-kernel
+- Sample Projects: Available in the repository under /samples
+- Community Support: GitHub Discussions and Discord
+
+## Version Compatibility
+- Track SDK versions
+- Check feature matrix for language support
+- Verify LLM provider compatibility
+- Monitor breaking changes

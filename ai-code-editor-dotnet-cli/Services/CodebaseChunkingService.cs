@@ -8,7 +8,26 @@ namespace AiCodeEditor.Cli.Services
         private readonly int _maxChunkSize;
         private readonly string[] _allowedExtensions = new[] { 
             ".cs", ".js", ".ts", ".py", ".go", ".java", ".cpp", ".hpp", ".h", 
-            ".c", ".jsx", ".tsx", ".php", ".rb", ".rs", ".swift" 
+            ".c", ".jsx", ".tsx", ".php", ".rb", ".rs", ".swift"
+        };
+
+        private readonly string[] _ignoredPaths = new[] {
+            "node_modules",
+            "obj",
+            ".git",
+            "dist",
+            "build",
+            "target",
+            "bin/Debug",
+            "bin/Release",
+            ".vs",
+            ".vscode",
+            "packages",
+            "TestResults",
+            "coverage",
+            "bin",
+            "obj",
+            "Prompts"  // Ignore prompts directory entirely
         };
 
         public CodebaseChunkingService(int maxChunkSize = 2048)
@@ -44,8 +63,11 @@ namespace AiCodeEditor.Cli.Services
 
             foreach (var file in files)
             {
+                Console.WriteLine($"Processing file: {file}");
                 if (ShouldSkipFile(file))
                     continue;
+
+                Console.WriteLine($"Selected file: {file}");
 
                 var fileContent = await File.ReadAllTextAsync(file);
                 var language = GetLanguageFromExtension(Path.GetExtension(file));
@@ -57,18 +79,7 @@ namespace AiCodeEditor.Cli.Services
 
         private bool ShouldSkipFile(string filePath)
         {
-            var skipPatterns = new[]
-            {
-                "node_modules",
-                "bin",
-                "obj",
-                ".git",
-                "dist",
-                "build",
-                "target"
-            };
-
-            return skipPatterns.Any(pattern => 
+            return _ignoredPaths.Any(pattern => 
                 filePath.Contains(pattern, StringComparison.OrdinalIgnoreCase));
         }
 

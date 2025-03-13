@@ -10,7 +10,7 @@ namespace AiCodeEditor.Cli.Commands
     [Command("explain", Description = "Get an AI-powered explanation of the codebase or specific parts of it")]
     public class ExplainCodebaseCommand : ICommand
     {
-        [CommandParameter(0, Description = "Optional query to focus the explanation on specific parts of the codebase", IsRequired = false)]
+        [CommandOption("query", 'q', Description = "Optional query to focus the explanation on specific parts of the codebase", IsRequired = true)]
         public string? Query { get; init; }
 
         private readonly PromptService _promptService;
@@ -27,9 +27,12 @@ namespace AiCodeEditor.Cli.Commands
 
         public async ValueTask ExecuteAsync(IConsole console)
         {
+            await console.Output.WriteLineAsync($"Query: {Query}");
+            var currentDirectory = Directory.GetCurrentDirectory();
+            await console.Output.WriteLineAsync($"Current directory: {currentDirectory}");
 
             await _codebaseIndexingService.IndexCodebaseAsync(
-                Directory.GetCurrentDirectory(),
+                currentDirectory,
                 (message, isNewLine) => 
                 {
                     console.Output.Write(message);

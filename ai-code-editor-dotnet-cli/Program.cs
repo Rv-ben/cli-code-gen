@@ -5,7 +5,7 @@ using AiCodeEditor.Cli.Services;
 using AiCodeEditor.Cli.Plugins;
 using AiCodeEditor.Cli.Models;
 using AiCodeEditor.Cli.Commands;
-
+using Microsoft.SemanticKernel;
 namespace AiCodeEditor.Cli
 {
     public static class Program
@@ -23,7 +23,7 @@ namespace AiCodeEditor.Cli
                 QdrantHost = "localhost",
                 QdrantPort = 6334,
                 QdrantCollection = Guid.NewGuid().ToString("N"),
-                SearchThreshold = 0.3f,
+                SearchThreshold = 0.4f,
                 MaxSearchResults = 2,
                 UseOllama = true,
                 OpenAIKey = null,
@@ -34,11 +34,28 @@ namespace AiCodeEditor.Cli
             // Register services
             services.AddSingleton<OllamaEmbeddingService>();
             services.AddSingleton<QdrantService>();
-            services.AddSingleton<SemanticKernelService>();
             services.AddSingleton<CodeSearchPlugin>();
             services.AddSingleton<PromptService>();
             services.AddSingleton<CodeSearchService>();
             services.AddSingleton<CodebaseIndexingService>();
+            services.AddSingleton<Kernel>(s => {
+                var builder = Kernel.CreateBuilder();
+                if (config.UseOllama) {
+                    builder.AddOllamaChatCompletion(
+                        serviceId: "ollama",
+                        modelId: config.OllamaModel,
+                        endpoint: new Uri(config.OllamaHost)
+                    );
+                }
+                else {
+                    builder.AddOpenAIChatCompletion(
+                        modelId: config.OpenAIModel,
+                        apiKey: config.OpenAIKey
+                    );
+                }
+
+                return builder.Build();
+            });
             
             // Register commands and their dependencies
             services.AddTransient<SearchCodeCommand>();

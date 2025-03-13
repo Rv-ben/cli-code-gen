@@ -1,0 +1,17 @@
+description: "Identifies bugs in code with additional context"
+template: handlebars
+prompt: |
+  You are a senior software developer. 
+  You are given a code and some additional context.
+  Find the bug in the code. Keep the answer under 100 words.
+
+  Code:
+  {{$code}}
+
+  Additional Context:
+  {{$additionalContext}}
+input_variables:
+  - name: code
+    description: "The code to analyze for bugs"
+  - name: additionalContext
+    description: "Additional context about the code or reported issues" 

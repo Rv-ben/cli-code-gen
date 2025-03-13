@@ -1,0 +1,17 @@
+description: "Creates a step-by-step refactoring plan for given code"
+template: handlebars
+prompt: |
+  Create a step-by-step refactoring plan for this {{$language}} code:
+
+  {{$code}}
+
+  Plan should:
+  1. Identify areas needing improvement
+  2. Suggest specific refactoring techniques
+  3. Maintain functionality while improving code quality
+  4. List steps in order of priority
+input_variables:
+  - name: code
+    description: "The code to refactor"
+  - name: language
+    description: "The programming language of the code" 

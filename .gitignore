@@ -3,3 +3,4 @@ ai-code-editor/ai-code-editor
 .env
 **/bin/**
 **/obj/**
+.vscode/**

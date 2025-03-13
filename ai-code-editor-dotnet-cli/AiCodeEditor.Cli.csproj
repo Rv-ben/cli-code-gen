@@ -16,4 +16,4 @@
     <PackageReference Include="Qdrant.Client" Version="1.7.0" />
   </ItemGroup>
 
-</Project> 
+</Project>

@@ -1,24 +1,34 @@
 using Microsoft.SemanticKernel;
 using System.ComponentModel;
 
-public static class IOPlugin
+public class IOPlugin
 {
 
     [KernelFunction, Description("Read a file")]
-    public static async Task<string> ReadFileAsync(string filePath)
+    public async Task<string> ReadFileAsync(
+        [Description("The path of the file to read")]
+        string filePath)
     {
+        Console.WriteLine($"Reading file: {filePath}");
         var content = await File.ReadAllTextAsync(filePath);
         var absolutePath = Path.GetFullPath(filePath);
         return $"=== FILE PATH ===\n{absolutePath}\n=== CONTENT ===\n{content}";
     }
 
     [KernelFunction, Description("Write a file")]
-    public static async Task WriteFileAsync(string filePath, string content)
+    public async Task WriteFileAsync(
+        [Description("The path of the file to write")]
+        string filePath,
+        [Description("The content to write to the file")]
+        string content)
     {
         await File.WriteAllTextAsync(filePath, content);
     }
 
-    public static async Task<string> ReadFilesAsync(List<string> foundFilePaths)
+    [KernelFunction, Description("Read multiple files")]
+    public async Task<string> ReadFilesAsync(
+        [Description("The list of file paths to read")]
+        List<string> foundFilePaths)
     {
         var files = new System.Text.StringBuilder();
         foreach (var filePath in foundFilePaths)

@@ -1,5 +1,7 @@
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.Connectors.Ollama;
 using Microsoft.SemanticKernel.Functions;
+using System.ComponentModel;
 
 namespace AiCodeEditor.Cli.Services
 {
@@ -34,7 +36,10 @@ namespace AiCodeEditor.Cli.Services
             return functions;
         }
 
-        public async Task<string> GetCodeExplanationAsync(string code, string language)
+        [KernelFunction, Description("Get an explanation of the provided code")]
+        public async Task<string> GetCodeExplanationAsync(
+            [Description("The code to explain")] string code,
+            [Description("The programming language of the code")] string language)
         {   
             var arguments = new KernelArguments
             {
@@ -46,7 +51,11 @@ namespace AiCodeEditor.Cli.Services
             return result.GetValue<string>();
         }
 
-        public async Task<string> GetPlantUMLAsync(string query, string code, string language)
+        [KernelFunction, Description("Generate a PlantUML diagram from code")]
+        public async Task<string> GetPlantUMLAsync(
+            [Description("The query describing what to diagram")] string query,
+            [Description("The code to generate a diagram from")] string code,
+            [Description("The programming language of the code")] string language)
         {
             var arguments = new KernelArguments
             {
@@ -59,7 +68,10 @@ namespace AiCodeEditor.Cli.Services
             return result.GetValue<string>();
         }
         
-        public async Task<string> FindBugAsync(string code, string additionalContext)
+        [KernelFunction, Description("Find potential bugs in the code")]
+        public async Task<string> FindBugAsync(
+            [Description("The code to analyze for bugs")] string code,
+            [Description("Additional context about the code")] string additionalContext)
         {
             var arguments = new KernelArguments
             {
@@ -71,7 +83,11 @@ namespace AiCodeEditor.Cli.Services
             return result.GetValue<string>();
         }
 
-        public async Task<string> GetEnhancedSearchQueryAsync(string searchQuery, string codeContext, int queryCount)
+        [KernelFunction, Description("Generate enhanced search queries based on code context")]
+        public async Task<string> GetEnhancedSearchQueryAsync(
+            [Description("The original search query")] string searchQuery,
+            [Description("The code context to use for enhancement")] string codeContext,
+            [Description("Number of enhanced queries to generate")] int queryCount)
         {
             var arguments = new KernelArguments
             {
@@ -81,6 +97,32 @@ namespace AiCodeEditor.Cli.Services
             };
             
             var result = await _functions["SearchContextualized"]["EnhanceSearchQuery"].InvokeAsync(_kernel, arguments);
+            return result.GetValue<string>();
+        }
+
+        [KernelFunction, Description("Generate a PlantUML diagram from code")]
+        public async Task<string> GetPlantUMLV2Async(
+            [Description("The query describing what to diagram")] string query,
+            [Description("The code to generate a diagram from")] string code,
+            [Description("The programming language of the code")] string language)
+        {
+
+            var ollamaSettings = new OllamaPromptExecutionSettings
+            {
+                FunctionChoiceBehavior = FunctionChoiceBehavior.Auto()
+            };
+            
+            var arguments = new KernelArguments
+            {
+                ["query"] = query,
+                ["code"] = code,
+                ExecutionSettings = new Dictionary<string, PromptExecutionSettings>
+                {
+                    ["default"] = ollamaSettings
+                }
+            };
+            
+            var result = await _functions["CodeExplanation"]["MakePlantUMLV2"].InvokeAsync(_kernel, arguments);
             return result.GetValue<string>();
         }
     }

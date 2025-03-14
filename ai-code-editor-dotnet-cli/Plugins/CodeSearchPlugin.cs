@@ -17,7 +17,7 @@ namespace AiCodeEditor.Cli.Plugins
             _searchService = new CodeSearchService(embeddingService, qdrantService);
         }
 
-        [KernelFunction, Description("Search for files in the codebase")]
+        [KernelFunction, Description("Search for code files and return their contents")]
         public async Task<string> SearchCodeFiles(
             [Description("The search query to find relevant code")] string query, 
             [Description("The maximum number of results to return")] int maxResults = 3,
@@ -56,14 +56,39 @@ namespace AiCodeEditor.Cli.Plugins
             return response.ToString().TrimEnd();
         }
 
-        public async Task<List<string>> SearchFilePathsUsingCodeContext(string query, int maxResults = 3, float threshold = 0.5f, List<string>? excludedFilePaths = null)
+        [KernelFunction, Description("Search for file paths using code context")]
+        public async Task<List<string>> SearchFilePathsUsingCodeContext(
+            [Description("The search query to find relevant code")] string query,
+            [Description("The maximum number of results to return")] int maxResults = 3,
+            [Description("The minimum score threshold for results")] float threshold = 0.5f,
+            [Description("File paths to exclude from the search")] List<string>? excludedFilePaths = null)
         {
-            return await _searchService.SearchFilePathsAsync(query, maxResults, threshold, excludedFilePaths);
+            Console.WriteLine($"\nSearching for file paths using code context: {query}");
+            var results = await _searchService.SearchFilePathsAsync(query, maxResults, threshold, excludedFilePaths);
+            Console.WriteLine($"Found {results.Count} results");
+            foreach (var result in results)
+            {
+                Console.WriteLine($"Match: {result}");
+            }
+            return results;
         }
 
-        public async Task<List<string>> SearchFilePaths(string query, int maxResults = 3, float threshold = 0.5f, List<string>? excludedFilePaths = null)
+        [KernelFunction, Description("Search for file paths")]
+        public async Task<List<string>> SearchFilePaths(
+            [Description("The search query to find relevant code")] string query,
+            [Description("The maximum number of results to return")] int maxResults = 3,
+            [Description("The minimum score threshold for results")] float threshold = 0.5f,
+            [Description("File paths to exclude from the search")] List<string>? excludedFilePaths = null)
         {
-            return await _searchService.SearchFilePathsAsync(query, maxResults, threshold, excludedFilePaths);
+            Console.WriteLine($"\nSearching for file paths: {query}");
+            var results = await _searchService.SearchFilePathsAsync(query, maxResults, threshold, excludedFilePaths);
+            Console.WriteLine($"Found {results.Count} results");
+            foreach (var result in results)
+            {
+                Console.WriteLine($"Match: {result}");
+            }
+            
+            return results;
         }
     }
 } 

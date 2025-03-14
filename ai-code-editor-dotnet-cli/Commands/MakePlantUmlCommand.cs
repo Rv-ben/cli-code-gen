@@ -18,11 +18,14 @@ namespace AiCodeEditor.Cli.Commands
         private readonly CodeSearchPlugin _codeSearchPlugin;
         private readonly CodebaseIndexingService _codebaseIndexingService;
 
-        public MakePlantUmlCommand(PromptService promptService, CodeSearchPlugin codeSearchPlugin, CodebaseIndexingService codebaseIndexingService)
+        private readonly IOPlugin _ioPlugin;
+
+        public MakePlantUmlCommand(PromptService promptService, CodeSearchPlugin codeSearchPlugin, CodebaseIndexingService codebaseIndexingService, IOPlugin ioPlugin)
         {
             _promptService = promptService;
             _codeSearchPlugin = codeSearchPlugin;
             _codebaseIndexingService = codebaseIndexingService;
+            _ioPlugin = ioPlugin;
         }
 
         public async ValueTask ExecuteAsync(IConsole console)
@@ -53,7 +56,7 @@ namespace AiCodeEditor.Cli.Commands
             string builder = "";
             foreach (var filePath in foundFilePaths)
             {
-                builder += await IOPlugin.ReadFileAsync(filePath);
+                builder += await _ioPlugin.ReadFileAsync(filePath);
             }
 
             try
@@ -89,7 +92,7 @@ namespace AiCodeEditor.Cli.Commands
             }
             
             // Get all the files in the foundFilePaths
-            var allFiles = await IOPlugin.ReadFilesAsync(foundFilePaths);
+            var allFiles = await _ioPlugin.ReadFilesAsync(foundFilePaths);
 
             // generate a plant uml diagram of the codebase
             var plantUml = await _promptService.GetPlantUMLAsync(Query, allFiles, "C#");

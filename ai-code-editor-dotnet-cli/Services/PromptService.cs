@@ -46,10 +46,11 @@ namespace AiCodeEditor.Cli.Services
             return result.GetValue<string>();
         }
 
-        public async Task<string> GetPlantUMLAsync(string code, string language)
+        public async Task<string> GetPlantUMLAsync(string query, string code, string language)
         {
             var arguments = new KernelArguments
             {
+                ["query"] = query,
                 ["code"] = code,
                 ["language"] = language
             };

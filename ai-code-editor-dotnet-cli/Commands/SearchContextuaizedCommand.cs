@@ -61,7 +61,7 @@ namespace AiCodeEditor.Cli.Commands
             try
             {
                 // Generate enhanced search query using the context
-                var enhancedQuery = await _promptService.GetEnhancedSearchQueryAsync(Query, builder, 3);
+                var enhancedQuery = await _promptService.GetEnhancedSearchQueryAsync(Query, builder, 2);
                 await console.Output.WriteLineAsync($"\nEnhanced query: {enhancedQuery}");
 
                 // Parse the enhanced query
@@ -76,20 +76,27 @@ namespace AiCodeEditor.Cli.Commands
                 {
                     await console.Output.WriteLineAsync($"\nSearching with query: {query}");
                     var filePaths = await _codeSearchPlugin.SearchFilePathsUsingCodeContext(query, 3, 0.5f, foundFilePaths);
-                    foundFilePaths.AddRange(filePaths);
+                    var topResult = filePaths.FirstOrDefault();
+                    if (topResult != null)
+                    {
+                        foundFilePaths.Add(topResult);
+                    }
                     await console.Output.WriteLineAsync("\nSearch results:");
                     await console.Output.WriteLineAsync(string.Join("\n", filePaths));
                 }
-
-                // Search with enhanced query
-                // var searchResults = await _codeSearchPlugin.SearchCode(enhancedQuery);
-                // await console.Output.WriteLineAsync("\nSearch results:");
-                // await console.Output.WriteLineAsync(searchResults);
             }
             catch (Exception ex)
             {
                 await console.Output.WriteLineAsync($"Error performing contextualized search: {ex.Message}");
             }
+            
+            // Get all the files in the foundFilePaths
+            var allFiles = await IOPlugin.ReadFilesAsync(foundFilePaths);
+
+            // generate a plant uml diagram of the codebase
+            var plantUml = await _promptService.GetPlantUMLAsync(Query, allFiles, "C#");
+            await console.Output.WriteLineAsync("\nPlantUML diagram:");
+            await console.Output.WriteLineAsync(plantUml);
         }
     }
 }

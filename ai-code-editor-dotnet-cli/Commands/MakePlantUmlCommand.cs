@@ -48,7 +48,7 @@ namespace AiCodeEditor.Cli.Commands
 
             try
             {
-                var plantUml = await _promptService.GetPlantUMLAsync(relevantCode, "C#");
+                var plantUml = await _promptService.GetPlantUMLAsync(Query, relevantCode, "C#");
                 await console.Output.WriteLineAsync(plantUml);
             }
             catch (Exception ex)

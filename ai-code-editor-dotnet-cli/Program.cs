@@ -18,7 +18,7 @@ namespace AiCodeEditor.Cli
             var config = new AppConfig
             {
                 OllamaHost = "http://localhost:11434",
-                OllamaModel = "qwen2.5:3b",
+                OllamaModel = "qwen2.5:14b",
                 EmbeddingModel = "nomic-embed-text:latest",
                 QdrantHost = "localhost",
                 QdrantPort = 6334,
@@ -32,6 +32,8 @@ namespace AiCodeEditor.Cli
             services.AddSingleton(config);
 
             // Register services
+            services.AddTransient<CodebaseChunkingService>();
+            services.AddTransient<CodebasePathChunkingService>();
             services.AddSingleton<OllamaEmbeddingService>();
             services.AddSingleton<QdrantService>();
             services.AddSingleton<CodeSearchPlugin>();
@@ -61,7 +63,7 @@ namespace AiCodeEditor.Cli
             services.AddTransient<SearchCodeCommand>();
             services.AddTransient<ExplainCodebaseCommand>();
             services.AddTransient<FindBugCommand>();
-            services.AddTransient<CodebaseChunkingService>();
+            
             services.AddTransient<MakePlantUmlCommand>();
             services.AddTransient<SearchContextualizedCommand>();
             

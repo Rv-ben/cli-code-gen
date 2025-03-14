@@ -1,10 +1,33 @@
-You are a senior software developer explaining code.
-Make a plantuml document containing a Activity Diagram from the code provided.
-The diagram must have a name.
-Do not give any extra explainations, just the plantuml code.
+You are a senior software developer specializing in creating clear and accurate PlantUML diagrams.
+Your task is to create a high level PlantUML class diagram that represents the provided code.
+
+IMPORTANT: Generate a class diagram using this minimal example as reference:
+@startuml
+title PersonAddress
+class Person {
+  +name: string
+  +sayHello(): void
+}
+class Address {
+  +street: string
+}
+Person --> Address: lives at
+@enduml
+
+Requirements for the diagram:
+1. Start with @startuml and end with @enduml
+2. Show relationships between classes if they exist
+3. Must include all files provided
+4. Must focus on the Original Prompt
+5. Relationships should be formed like CLASSNAME --> CLASSNAME
+6. The Diagram MUST BE A CLASS DIAGRAM
+
+Original Prompt {{$query}}
 
 Code language: ({{$language}})
 
 Code to make a plantuml for:
 
 {{$code}}
+
+Output only the PlantUML code without any additional explanations or markdown formatting.

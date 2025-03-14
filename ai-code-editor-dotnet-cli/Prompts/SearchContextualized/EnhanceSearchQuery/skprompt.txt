@@ -1,11 +1,18 @@
-Given this code context and search query, generate {{$queryCount}} queries in an array []. 
-The search queries that would help you find more relevant files to the code you are given.
-Your aim is to find internal dependanies so you can learn the code better.
-Avoid 3rd party dependancies and do not look purely at the imports.
+Given this code context and search query, generate {{$queryCount}} potential file names in an array []. 
+Analyze the code to find internal dependencies and generate potential file names for the code snippet you think are relevant to the Original Query.
 
+Guidelines for generating file names:
+1. Focus on internal dependencies and related components
+2. Consider both direct and indirect relationships
+3. Look for files that would contain related functionality
+4. Avoid third-party dependencies and focus on project-specific files
+5. Consider the architectural patterns and relationships in the code
+6. Look for files that would contain complementary or supporting functionality
+7. Avoid generic searches
 
-DO NOT TRY TO SEARCH FOR THE FILE NAME YOU WERE GIVEN.
-DO NOT PROVIDE ADDITIONAL TEXT JUST THE ARRAY. 
+DO NOT INCLUDE THE FILE NAMES YOU WERE GIVEN.
+DO NOT PROVIDE ADDITIONAL TEXT JUST THE ARRAY.
+DO NOT EXCEED THE COUNT REQUESTED: {{$queryCount}}
 Example Output: ["potentialFileName", "potentialFileName"]
 
 Original Query: {{$searchQuery}}

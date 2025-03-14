@@ -6,7 +6,7 @@ namespace AiCodeEditor.Cli.Services
     public class PromptService
     {
         private readonly Kernel _kernel;
-        private readonly Dictionary<string, KernelFunction> _functions;
+        private readonly Dictionary<string, KernelPlugin> _functions;
 
         public PromptService(Kernel kernel)
         {
@@ -14,42 +14,24 @@ namespace AiCodeEditor.Cli.Services
             _functions = LoadPromptFunctions();
         }
 
-        private Dictionary<string, KernelFunction> LoadPromptFunctions()
+        private Dictionary<string, KernelPlugin> LoadPromptFunctions()
         {
             var promptsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Prompts");
-            var functions = new Dictionary<string, KernelFunction>();
+            var functions = new Dictionary<string, KernelPlugin>();
+
+            var codeExplanationPlugin = Path.Combine(promptsPath, "CodeExplanation");
+            var searchContextualizedPlugin = Path.Combine(promptsPath, "SearchContextualized");
+
+            Console.WriteLine("Loading prompt functions");
             
             // Import all prompt functions from YAML files
-            functions["SearchContextualized"] = _kernel.CreateFunctionFromPrompt(Path.Combine(promptsPath, "SearchContextualized", "skprompt.yaml"));
-            functions["RefactoringPlan"] = _kernel.CreateFunctionFromPrompt(Path.Combine(promptsPath, "RefactoringPlan", "skprompt.yaml"));
-            functions["CodeExplanation"] = _kernel.CreateFunctionFromPrompt(Path.Combine(promptsPath, "CodeExplanation", "skprompt.yaml"));
-            functions["FindBug"] = _kernel.CreateFunctionFromPrompt(Path.Combine(promptsPath, "FindBug", "skprompt.yaml"));
+            functions["CodeExplanation"] = _kernel.ImportPluginFromPromptDirectory(codeExplanationPlugin);
+            functions["SearchContextualized"] = _kernel.ImportPluginFromPromptDirectory(searchContextualizedPlugin);
+
+            Console.WriteLine("Loaded prompt functions");
+            Console.WriteLine(functions["CodeExplanation"].FunctionCount);
             
             return functions;
-        }
-
-        public async Task<string> SearchContextualizedQueryAsync(string searchQuery, string codeContext)
-        {
-            var arguments = new KernelArguments
-            {
-                ["searchQuery"] = searchQuery,
-                ["codeContext"] = codeContext
-            };
-            
-            var result = await _functions["SearchContextualized"].InvokeAsync(_kernel, arguments);
-            return result.GetValue<string>();
-        }
-
-        public async Task<string> GetRefactoringPlanAsync(string code, string language)
-        {
-            var arguments = new KernelArguments
-            {
-                ["code"] = code,
-                ["language"] = language
-            };
-            
-            var result = await _functions["RefactoringPlan"].InvokeAsync(_kernel, arguments);
-            return result.GetValue<string>();
         }
 
         public async Task<string> GetCodeExplanationAsync(string code, string language)
@@ -60,7 +42,19 @@ namespace AiCodeEditor.Cli.Services
                 ["language"] = language
             };
             
-            var result = await _functions["CodeExplanation"].InvokeAsync(_kernel, arguments);
+            var result = await _functions["CodeExplanation"]["ExplainCode"].InvokeAsync(_kernel, arguments);
+            return result.GetValue<string>();
+        }
+
+        public async Task<string> GetPlantUMLAsync(string code, string language)
+        {
+            var arguments = new KernelArguments
+            {
+                ["code"] = code,
+                ["language"] = language
+            };
+
+            var result = await _functions["CodeExplanation"]["MakePlantUML"].InvokeAsync(_kernel, arguments);
             return result.GetValue<string>();
         }
         
@@ -72,7 +66,20 @@ namespace AiCodeEditor.Cli.Services
                 ["additionalContext"] = additionalContext
             };
             
-            var result = await _functions["FindBug"].InvokeAsync(_kernel, arguments);
+            var result = await _functions["FindBug"]["FindBug"].InvokeAsync(_kernel, arguments);
+            return result.GetValue<string>();
+        }
+
+        public async Task<string> GetEnhancedSearchQueryAsync(string searchQuery, string codeContext, int queryCount)
+        {
+            var arguments = new KernelArguments
+            {
+                ["searchQuery"] = searchQuery,
+                ["codeContext"] = codeContext,
+                ["queryCount"] = queryCount
+            };
+            
+            var result = await _functions["SearchContextualized"]["EnhanceSearchQuery"].InvokeAsync(_kernel, arguments);
             return result.GetValue<string>();
         }
     }

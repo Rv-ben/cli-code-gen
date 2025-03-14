@@ -1,0 +1,15 @@
+@startuml
+
+class PromptService {}
+class CodeSearchPlugin {}
+class CodebaseIndexingService {}
+
+class MakePlantUmlCommand {
+  +ExecuteAsync(IConsole console)
+  -Query: string?
+  +_promptService: PromptService
+  +_codeSearchPlugin: CodeSearchPlugin
+  +_codebaseIndexingService: CodebaseIndexingService
+}
+
+@enduml

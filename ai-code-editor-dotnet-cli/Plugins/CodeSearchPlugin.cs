@@ -8,8 +8,6 @@ namespace AiCodeEditor.Cli.Plugins
     public class CodeSearchPlugin
     {
         private readonly CodeSearchService _searchService;
-        private readonly int _maxResults;
-        private readonly float _threshold;
 
         public CodeSearchPlugin(
             OllamaEmbeddingService embeddingService,
@@ -17,16 +15,16 @@ namespace AiCodeEditor.Cli.Plugins
             AppConfig config)
         {
             _searchService = new CodeSearchService(embeddingService, qdrantService);
-            _maxResults = config.MaxSearchResults;
-            _threshold = config.SearchThreshold;
         }
 
         [KernelFunction, Description("Search code in the codebase")]
         public async Task<string> SearchCode(
-            [Description("The search query to find relevant code")] string query)
+            [Description("The search query to find relevant code")] string query, 
+            [Description("The maximum number of results to return")] int maxResults = 3,
+            [Description("The minimum score threshold for results")] float threshold = 0.5f)
         {
             Console.WriteLine($"\nSearching for: {query}");
-            var results = await _searchService.SearchAsync(query, _maxResults, _threshold);
+            var results = await _searchService.SearchAsync(query, maxResults, threshold);
             
             Console.WriteLine($"Found {results.Count} results");
             foreach (var result in results)

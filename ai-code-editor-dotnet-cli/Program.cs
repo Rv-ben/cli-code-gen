@@ -62,7 +62,9 @@ namespace AiCodeEditor.Cli
             services.AddTransient<ExplainCodebaseCommand>();
             services.AddTransient<FindBugCommand>();
             services.AddTransient<CodebaseChunkingService>();
-
+            services.AddTransient<MakePlantUmlCommand>();
+            services.AddTransient<SearchContextualizedCommand>();
+            
             var serviceProvider = services.BuildServiceProvider();
 
             return await new CliApplicationBuilder()

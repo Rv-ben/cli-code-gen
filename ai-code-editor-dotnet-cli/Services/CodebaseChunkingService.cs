@@ -63,11 +63,8 @@ namespace AiCodeEditor.Cli.Services
 
             foreach (var file in files)
             {
-                Console.WriteLine($"Processing file: {file}");
                 if (ShouldSkipFile(file))
                     continue;
-
-                Console.WriteLine($"Selected file: {file}");
 
                 var fileContent = await File.ReadAllTextAsync(file);
                 var language = GetLanguageFromExtension(Path.GetExtension(file));

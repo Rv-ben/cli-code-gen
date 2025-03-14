@@ -3,6 +3,7 @@ using CliFx.Attributes;
 using CliFx.Infrastructure;
 using AiCodeEditor.Cli.Services;
 using AiCodeEditor.Cli.Plugins;
+using System.Text.Json;
 
 namespace AiCodeEditor.Cli.Commands
 {
@@ -42,8 +43,8 @@ namespace AiCodeEditor.Cli.Commands
             );
 
             // Get initial context
-            string codeContext = await _codeSearchPlugin.SearchCode(Query);
-            if (codeContext == "No relevant code found.")
+            string codeContext = await _codeSearchPlugin.SearchCodeFiles(Query, 1);
+            if (codeContext == "No relevant files found.")
             {
                 await console.Output.WriteLineAsync("Could not find initial context for your query.");
                 return;
@@ -55,10 +56,29 @@ namespace AiCodeEditor.Cli.Commands
                 var enhancedQuery = await _promptService.GetEnhancedSearchQueryAsync(Query, codeContext, 3);
                 await console.Output.WriteLineAsync($"\nEnhanced query: {enhancedQuery}");
 
+                // Parse the enhanced query
+                var enhancedQueries = JsonSerializer.Deserialize<List<string>>(enhancedQuery);
+                if (enhancedQueries == null)
+                {
+                    await console.Output.WriteLineAsync("Could not parse enhanced query.");
+                    return;
+                }
+
+                var foundFilePaths = new List<string>();
+
+                foreach (var query in enhancedQueries)
+                {
+                    await console.Output.WriteLineAsync($"\nSearching with query: {query}");
+                    var filePaths = await _codeSearchPlugin.SearchFilePaths(query, 1, 0.5f, foundFilePaths);
+                    foundFilePaths.AddRange(filePaths);
+                    await console.Output.WriteLineAsync("\nSearch results:");
+                    await console.Output.WriteLineAsync(string.Join("\n", filePaths));
+                }
+
                 // Search with enhanced query
-                var searchResults = await _codeSearchPlugin.SearchCode(enhancedQuery);
-                await console.Output.WriteLineAsync("\nSearch results:");
-                await console.Output.WriteLineAsync(searchResults);
+                // var searchResults = await _codeSearchPlugin.SearchCode(enhancedQuery);
+                // await console.Output.WriteLineAsync("\nSearch results:");
+                // await console.Output.WriteLineAsync(searchResults);
             }
             catch (Exception ex)
             {

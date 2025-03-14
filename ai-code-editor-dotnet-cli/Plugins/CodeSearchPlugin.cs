@@ -17,8 +17,8 @@ namespace AiCodeEditor.Cli.Plugins
             _searchService = new CodeSearchService(embeddingService, qdrantService);
         }
 
-        [KernelFunction, Description("Search code in the codebase")]
-        public async Task<string> SearchCode(
+        [KernelFunction, Description("Search for files in the codebase")]
+        public async Task<string> SearchCodeFiles(
             [Description("The search query to find relevant code")] string query, 
             [Description("The maximum number of results to return")] int maxResults = 3,
             [Description("The minimum score threshold for results")] float threshold = 0.5f)
@@ -34,7 +34,7 @@ namespace AiCodeEditor.Cli.Plugins
             
             if (!results.Any())
             {
-                return "No relevant code found.";
+                return "No relevant files found.";
             }
 
             var response = new System.Text.StringBuilder();
@@ -54,6 +54,11 @@ namespace AiCodeEditor.Cli.Plugins
             }
 
             return response.ToString().TrimEnd();
+        }
+
+        public async Task<List<string>> SearchFilePaths(string query, int maxResults = 3, float threshold = 0.5f, List<string>? excludedFilePaths = null)
+        {
+            return await _searchService.SearchFilePathsAsync(query, maxResults, threshold, excludedFilePaths);
         }
     }
 } 

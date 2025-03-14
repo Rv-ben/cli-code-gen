@@ -45,8 +45,8 @@ namespace AiCodeEditor.Cli.Commands
                 string searchContext = "";
                 if (!string.IsNullOrEmpty(Query))
                 {
-                    relevantCode = await _codeSearchPlugin.SearchCode(Query);
-                    if (relevantCode == "No relevant code found.")
+                    relevantCode = await _codeSearchPlugin.SearchCodeFiles(Query);
+                    if (relevantCode == "No relevant files found.")
                     {
                         await console.Output.WriteLineAsync("Could not find relevant code matching your query.");
                         return;
@@ -56,7 +56,7 @@ namespace AiCodeEditor.Cli.Commands
                 else
                 {
                     // If no query provided, get some initial code to analyze
-                    relevantCode = await _codeSearchPlugin.SearchCode("main entry point program.cs");
+                    relevantCode = await _codeSearchPlugin.SearchCodeFiles("main entry point program.cs");
                     searchContext = "This is the main entry point of the application. Look for potential initialization or configuration issues.";
                 }
 

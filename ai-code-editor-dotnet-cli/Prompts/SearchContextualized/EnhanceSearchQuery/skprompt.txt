@@ -1,9 +1,11 @@
-Given this code context and search query, generate serveral search queries that would give you more code context to solve the original query:
+Given this code context and search query, generate {{$queryCount}} queries in an array []. 
+The search queries that would help you find more relevant files to the code you are given.
+Your aim is to find external dependanies so you can learn the code better.
+
+DO NOT PROVIDE ADDITIONAL TEXT JUST THE ARRAY.
+Example Output: ["Name of a external dependancy 1", "Name of a external dependancy 2"]
 
 Original Query: {{$searchQuery}}
 
 Code Context:
 {{$codeContext}}
-
-Generate {{$queryCount}} detailed search queries that will find the most relevant code based on this context.
-Return a list of queries only.

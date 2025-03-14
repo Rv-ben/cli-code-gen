@@ -64,9 +64,17 @@ namespace AiCodeEditor.Cli.Services
         public async Task<List<string>> SearchFilePathsAsync(
             string query,
             int limit = 5,
-            float scoreThreshold = 0.7f)
+            float scoreThreshold = 0.7f,
+            List<string>? excludedFilePaths = null)
         {
             var results = await SearchAsync(query, limit, scoreThreshold);
+
+            // Remove excluded file paths
+            if (excludedFilePaths != null)
+            {
+                results = results.Where(result => !excludedFilePaths.Contains(result.FilePath)).ToList();
+            }
+
             return results
                 .Select(r => r.FilePath)
                 .Distinct()
@@ -76,9 +84,17 @@ namespace AiCodeEditor.Cli.Services
         public async Task<Dictionary<string, List<SearchResult>>> SearchGroupedByFileAsync(
             string query,
             int limit = 5,
-            float scoreThreshold = 0.7f)
+            float scoreThreshold = 0.7f,
+            List<string>? excludedFilePaths = null)
         {
             var results = await SearchAsync(query, limit, scoreThreshold);
+
+            // Remove excluded file paths
+            if (excludedFilePaths != null)
+            {
+                results = results.Where(result => !excludedFilePaths.Contains(result.FilePath)).ToList();
+            }
+
             return results
                 .GroupBy(r => r.FilePath)
                 .ToDictionary(

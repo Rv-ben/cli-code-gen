@@ -44,8 +44,8 @@ namespace AiCodeEditor.Cli.Commands
             string relevantCode = "";
             if (!string.IsNullOrEmpty(Query))
             {
-                relevantCode = await _codeSearchPlugin.SearchCode(Query);
-                if (relevantCode == "No relevant code found.")
+                relevantCode = await _codeSearchPlugin.SearchCodeFiles(Query);
+                if (relevantCode == "No relevant files found.")
                 {
                     await console.Output.WriteLineAsync("Could not find relevant code matching your query.");
                     return;

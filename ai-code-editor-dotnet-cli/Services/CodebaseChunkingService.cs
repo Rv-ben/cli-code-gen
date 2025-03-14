@@ -74,6 +74,16 @@ namespace AiCodeEditor.Cli.Services
             return chunks;
         }
 
+        public List<string> GetCodebaseFilePaths(string rootPath)
+        {
+            var files = Directory.GetFiles(rootPath, "*.*", SearchOption.AllDirectories)
+                .Where(file => 
+                    _allowedExtensions.Contains(Path.GetExtension(file).ToLower()) &&
+                    File.Exists(file) && 
+                    !ShouldSkipFile(file));
+
+            return files.ToList();
+        }
         private bool ShouldSkipFile(string filePath)
         {
             return _ignoredPaths.Any(pattern => 

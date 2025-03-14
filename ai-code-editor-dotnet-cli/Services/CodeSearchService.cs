@@ -41,7 +41,7 @@ namespace AiCodeEditor.Cli.Services
             var queryEmbedding = await _embeddingService.GetEmbeddingAsync(query);
             
             // Search in Qdrant
-            var searchResults = await _qdrantService.SearchAsync(
+            var searchResults = await _qdrantService.SearchCodeBaseChunkAsync(
                 queryEmbedding,
                 limit,
                 scoreThreshold
@@ -101,6 +101,20 @@ namespace AiCodeEditor.Cli.Services
                     g => g.Key,
                     g => g.OrderBy(r => r.StartLine).ToList()
                 );
+        }
+
+
+        public async Task<List<string>> SearchPaths(string query, int maxResults = 3, float threshold = 0.5f, List<string>? excludedFilePaths = null)
+        {
+            var queryEmbedding = await _embeddingService.GetEmbeddingAsync(query);
+            var getFilePaths = await _qdrantService.SearchFilePathAsync(queryEmbedding, maxResults, threshold);
+
+            if (excludedFilePaths != null)
+            {
+                getFilePaths = getFilePaths.Where(r => !excludedFilePaths.Contains(r.Payload["file_path"].StringValue)).ToList();
+            }
+
+            return getFilePaths.Select(r => r.Payload["file_path"].StringValue).ToList();
         }
     }
 } 

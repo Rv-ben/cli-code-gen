@@ -43,17 +43,25 @@ namespace AiCodeEditor.Cli.Commands
             );
 
             // Get initial context
-            string codeContext = await _codeSearchPlugin.SearchCodeFiles(Query, 1);
-            if (codeContext == "No relevant files found.")
+            var foundFilePaths = await _codeSearchPlugin.SearchFilePaths(Query, 1);
+            if (foundFilePaths.Count == 0)
             {
                 await console.Output.WriteLineAsync("Could not find initial context for your query.");
                 return;
             }
 
+            await console.Output.WriteLineAsync($"Found files: {string.Join(", ", foundFilePaths)}");
+
+            string builder = "";
+            foreach (var filePath in foundFilePaths)
+            {
+                builder += await IOPlugin.ReadFileAsync(filePath);
+            }
+
             try
             {
                 // Generate enhanced search query using the context
-                var enhancedQuery = await _promptService.GetEnhancedSearchQueryAsync(Query, codeContext, 3);
+                var enhancedQuery = await _promptService.GetEnhancedSearchQueryAsync(Query, builder, 3);
                 await console.Output.WriteLineAsync($"\nEnhanced query: {enhancedQuery}");
 
                 // Parse the enhanced query
@@ -64,12 +72,10 @@ namespace AiCodeEditor.Cli.Commands
                     return;
                 }
 
-                var foundFilePaths = new List<string>();
-
                 foreach (var query in enhancedQueries)
                 {
                     await console.Output.WriteLineAsync($"\nSearching with query: {query}");
-                    var filePaths = await _codeSearchPlugin.SearchFilePaths(query, 1, 0.5f, foundFilePaths);
+                    var filePaths = await _codeSearchPlugin.SearchFilePathsUsingCodeContext(query, 3, 0.5f, foundFilePaths);
                     foundFilePaths.AddRange(filePaths);
                     await console.Output.WriteLineAsync("\nSearch results:");
                     await console.Output.WriteLineAsync(string.Join("\n", filePaths));

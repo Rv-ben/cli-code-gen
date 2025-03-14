@@ -56,6 +56,11 @@ namespace AiCodeEditor.Cli.Plugins
             return response.ToString().TrimEnd();
         }
 
+        public async Task<List<string>> SearchFilePathsUsingCodeContext(string query, int maxResults = 3, float threshold = 0.5f, List<string>? excludedFilePaths = null)
+        {
+            return await _searchService.SearchFilePathsAsync(query, maxResults, threshold, excludedFilePaths);
+        }
+
         public async Task<List<string>> SearchFilePaths(string query, int maxResults = 3, float threshold = 0.5f, List<string>? excludedFilePaths = null)
         {
             return await _searchService.SearchFilePathsAsync(query, maxResults, threshold, excludedFilePaths);

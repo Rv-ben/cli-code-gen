@@ -1,9 +1,12 @@
 Given this code context and search query, generate {{$queryCount}} queries in an array []. 
 The search queries that would help you find more relevant files to the code you are given.
-Your aim is to find external dependanies so you can learn the code better.
+Your aim is to find internal dependanies so you can learn the code better.
+Avoid 3rd party dependancies and do not look purely at the imports.
 
-DO NOT PROVIDE ADDITIONAL TEXT JUST THE ARRAY.
-Example Output: ["Name of a external dependancy 1", "Name of a external dependancy 2"]
+
+DO NOT TRY TO SEARCH FOR THE FILE NAME YOU WERE GIVEN.
+DO NOT PROVIDE ADDITIONAL TEXT JUST THE ARRAY. 
+Example Output: ["potentialFileName", "potentialFileName"]
 
 Original Query: {{$searchQuery}}
 

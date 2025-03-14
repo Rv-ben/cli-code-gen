@@ -11,7 +11,7 @@ namespace AiCodeEditor.Cli.Models
         public string QdrantHost { get; set; } = "localhost";
         public int QdrantPort { get; set; } = 6334;
         public string QdrantCollection { get; set; } = Guid.NewGuid().ToString("N");
-        
+        public string QdrantFileCollection { get; set; } = Guid.NewGuid().ToString("N");
         // Search settings
         public float SearchThreshold { get; set; } = 0.3f;
         public int MaxSearchResults { get; set; } = 2;

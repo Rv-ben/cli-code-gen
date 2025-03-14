@@ -25,12 +25,13 @@ namespace AiCodeEditor.Cli.Services
 
         public async Task IndexCodebaseAsync(string directory, ProgressCallback onProgress)
         {
+
+            // Initialize collection
+            onProgress("Initializing collection...");
+            await _qdrantService.InitializeCollectionAsync();
+
             try
             {
-                // Initialize collection
-                onProgress("Initializing collection...");
-                await _qdrantService.InitializeCollectionAsync();
-
                 // Chunk the codebase
                 onProgress("Chunking codebase...");
                 var chunks = await _chunkingService.ChunkCodebaseAsync(directory);
@@ -51,7 +52,7 @@ namespace AiCodeEditor.Cli.Services
                         { "content", chunk.Content }
                     };
 
-                    await _qdrantService.UpsertVectorAsync((ulong)i, embedding, payload);
+                    await _qdrantService.UpsertCodeBaseChunkVectorAsync((ulong)i, embedding, payload);
                     
                     if (i % 10 == 0) // Progress indicator
                     {
@@ -60,6 +61,35 @@ namespace AiCodeEditor.Cli.Services
                 }
                 onProgress("\nStorage complete!");
             }
+            catch (Exception ex)
+            {
+                throw new Exception($"Failed to index codebase: {ex.Message}", ex);
+            }
+
+            try
+            {
+                // Chunk file paths
+                onProgress("Chunking file paths...");
+                var filePaths = _chunkingService.GetCodebaseFilePaths(directory);
+                onProgress($"Found {filePaths.Count} file paths");
+
+                // Store file paths with embeddings
+                onProgress("Generating embeddings and storing file paths...");
+                for (int i = 1; i < filePaths.Count + 1; i++)
+                {
+                    var filePath = filePaths[i - 1];
+                    var embedding = await _embeddingService.GetEmbeddingAsync(filePath);
+                    var payload = new Dictionary<string, string> { { "file_path", filePath } };
+
+                    await _qdrantService.UpsertFilePathVectorAsync((ulong)i, embedding, payload);
+
+                    if (i % 10 == 0) // Progress indicator
+                    {
+                        onProgress(".", false);
+                        }
+                    }
+                    onProgress("\nStorage complete!");
+                }
             catch (Exception ex)
             {
                 throw new Exception($"Failed to index codebase: {ex.Message}", ex);
